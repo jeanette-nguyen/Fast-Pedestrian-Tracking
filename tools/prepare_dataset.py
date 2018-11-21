@@ -70,12 +70,12 @@ class DatasetGenerator(object):
         self.labels = self._get_labels()
 
 
-
     def _get_images_paths(self):
         images = glob.glob(os.path.join(self.src_dir, 'data', 'images', '*'))
         return images
 
     def _get_labels(self):
+        check = 'CHECKING IF GITHUB UPDATE WORKS'
         pass
 
 if __name__ == '__main__':
