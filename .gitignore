@@ -1,0 +1,6 @@
+records/*
+data/*.log
+*.pyc
+core/*.pyc
+tools/*.pyc
+tests/*
