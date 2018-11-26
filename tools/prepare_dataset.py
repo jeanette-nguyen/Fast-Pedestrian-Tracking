@@ -29,7 +29,7 @@ from core.logger import Logger
 from utils.constants import *
 
 # Module level constants
-DEBUG = False
+DEBUG = True
 
 
 def parse_cmds():
@@ -114,7 +114,7 @@ class DatasetGenerator(object):
         train = {'set%02d' % i: TRAIN for i in range (6)}
         test = {'set%02d' % i: TEST for i in range (6, 11)}
         map_phase = train.copy()
-        map_phase = map_phase.update(test)
+        map_phase.update(test)
         dataset[Columns.PHASE] = dataset[Columns.SET].map(map_phase)
 
         # groupby sets 10% of each as valid
@@ -209,18 +209,18 @@ class DatasetGenerator(object):
                 coord.append(coordinates)
                 lbl.append(label)
             else:
-                n_lbls.append(np.nan)
+                n_lbls.append(0)
                 coord.append(np.nan)
                 lbl.append(np.nan)
         self.dataset_df[Columns.COORD] = coord
         self.dataset_df[Columns.LABEL] = lbl
         self.dataset_df[Columns.N_LABELS] = n_lbls
 
-        self.logger.info('Loaded annotations. Number of frames not found\n{}'.
-                         format(self.dataset_df.isna().sum()))
+        self.logger.info('Loaded annotations. Number of frames w/out '
+                         'annotations\n{}'.format(self.dataset_df.isna().sum()))
 
         # Clean up nan values
-        self._drop_nans()
+        self._convert_nans()
 
         # Group frames to videos to sets
         self._group_objects()
@@ -247,13 +247,12 @@ class DatasetGenerator(object):
         self.sets2frames = self.dataset_df.groupby (Columns.SET)[
             Columns.IMAGES].apply(list).to_dict()
 
-    def _drop_nans(self):
-        """Drop NaN values"""
-        self.dataset_df = self.dataset_df.dropna()
-        self.logger.info('Dataset size after cleaning NaN values: {}'.
-                          format(self.dataset_df.shape))
+    def _convert_nans(self):
+        """Fill NaN values"""
+        self.dataset_df = self.dataset_df.fillna(value='[0]')
         self.logger.info('Total annotations: {}'.
-                          format(self.dataset_df[Columns.N_LABELS].sum ()))
+                          format(self.dataset_df[Columns.N_LABELS].sum()))
+        self.logger.info('Dataset size: {}'.format(self.dataset_df.shape))
 
 
     def _report_distribution(self):
