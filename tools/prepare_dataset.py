@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import sys
+sys.path.insert(0, os.path.abspath(os.path.pardir))
 from PIL import Image
 
 # Third party imports
@@ -28,7 +29,7 @@ from core.logger import Logger
 from utils.constants import *
 
 # Module level constants
-DEBUG = True
+DEBUG = False
 
 
 def parse_cmds():
@@ -57,7 +58,7 @@ def main():
     Logger.section_break(title='Generate Dataset')
 
     # Initialize DatasetGenerator
-    datagen = DatasetGenerator(src_dir, logger)
+    datagen = DatasetGenerator (src_dir, logger)
     datagen.generate()
     dataset = datagen.dataset_df
 
@@ -71,9 +72,10 @@ def main():
 
 class DatasetGenerator(object):
     """Generates datasets"""
-    def __init__(self, src_dir, logger):
+    def __init__(self, src_dir, logger, check_valid=False):
         self.src_dir = src_dir
         self.logger = logger
+        self.check_valid = check_valid
         self.dataset = {}
 
     def generate(self):
@@ -152,8 +154,8 @@ class DatasetGenerator(object):
                 images = open(os.path.join(root, tp[0])).read().splitlines()
                 images = [(i, tp[1]) for i in images]
                 valid_imgs.extend(images)
-            return valid_imgs
-        else:
+
+        if self.check_valid:
             images = glob.glob(os.path.join(self.src_dir, 'data', 'images', '*'))
             valid_imgs = []
             invalid_count = 0
@@ -168,10 +170,15 @@ class DatasetGenerator(object):
                     valid_imgs.append((i, False))
                     invalid_count += 1
 
-            self.logger.info('')
-            self.logger.info('Total images retrieved: {}'.format(len(images)))
             self.logger.info('Total invalid images: {}'.format(invalid_count))
-            return valid_imgs
+
+        else:
+            images = glob.glob(os.path.join(self.src_dir, 'data', 'images', '*'))
+            valid_imgs = [(i, True) for i in images]
+
+        self.logger.info ('')
+        self.logger.info ('Total images retrieved: {}'.format (len (images)))
+        return valid_imgs
 
     def _get_annotations(self):
         return json.load(open(os.path.join(self.src_dir,
@@ -220,12 +227,15 @@ class DatasetGenerator(object):
     def _clean_up_filenames(self):
         """Grab meta data from filenames"""
         col_names = [Columns.SET, Columns.VIDEO, Columns.FRAME]
+        self.dataset_df[Columns.IMAGES] = self.dataset_df[Columns.IMAGES].apply(
+            lambda x: os.path.basename(x))
         self.dataset_df[col_names] = self.dataset_df[
             Columns.IMAGES].str.split('_', expand=True)
-        self.dataset_df[Columns.SET] = self.dataset_df[
-            Columns.SET].str.split('/').str[-1]
         self.dataset_df[Columns.FRAME] = self.dataset_df[
             Columns.FRAME].str.split('.').str[0].astype(int)
+        data_dir = os.path.join(self.src_dir, 'data/images')
+        self.dataset_df[Columns.IMAGES] = data_dir + self.dataset_df[
+            Columns.IMAGES]
 
     def _group_objects(self):
         """Create helper dictionaries for accessing image files"""
