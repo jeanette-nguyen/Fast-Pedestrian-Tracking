@@ -113,7 +113,8 @@ class DatasetGenerator(object):
         # Assign partitions
         train = {'set%02d' % i: TRAIN for i in range (6)}
         test = {'set%02d' % i: TEST for i in range (6, 11)}
-        map_phase = {**train, **test}
+        map_phase = train.copy()
+        map_phase = map_phase.update(test)
         dataset[Columns.PHASE] = dataset[Columns.SET].map(map_phase)
 
         # groupby sets 10% of each as valid
