@@ -142,6 +142,7 @@ class DatasetGenerator(object):
                    VAL: self.val_set,
                    TEST: self.test_set}
         for phase in dataset:
+            self._memory_usage(dataset[phase])
             dataset[phase].to_csv(output_filename.format(phase), index=False)
 
     def _get_images_paths(self):
@@ -265,6 +266,11 @@ class DatasetGenerator(object):
             total_imgs = len(self.sets2frames[set])
             self.logger.info('{} [{} videos / {} images]: {}\n'.
                              format(set, len(video), total_imgs, sorted(video)))
+
+    def _memory_usage(self, df):
+        nbytes = sum (block.values.nbytes for block in df.blocks.values ())
+        self.logger.info('Memory usage: {}'.format(nbytes))
+
 
 if __name__ == '__main__':
     main()
