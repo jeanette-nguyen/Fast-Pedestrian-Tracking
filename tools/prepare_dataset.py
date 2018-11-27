@@ -239,7 +239,7 @@ class DatasetGenerator(object):
         self.dataset_df[Columns.FRAME] = self.dataset_df[
             Columns.FRAME].str.split('.').str[0].astype(int)
         data_dir = os.path.join(self.src_dir, 'data/images')
-        self.dataset_df[Columns.IMAGES] = data_dir + self.dataset_df[
+        self.dataset_df[Columns.IMAGES] = data_dir + '/' + self.dataset_df[
             Columns.IMAGES]
 
     def _group_objects(self):
@@ -253,7 +253,7 @@ class DatasetGenerator(object):
 
     def _convert_nans(self):
         """Fill NaN values"""
-        self.dataset_df = self.dataset_df.fillna(value='[0]')
+        self.dataset_df = self.dataset_df.fillna(value='[[0, 0, 0, 0]]')
         self.logger.info('Total annotations: {}'.
                           format(self.dataset_df[Columns.N_LABELS].sum()))
         self.logger.info('Dataset size: {}'.format(self.dataset_df.shape))
