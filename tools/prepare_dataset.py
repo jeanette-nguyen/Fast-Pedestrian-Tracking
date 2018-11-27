@@ -29,7 +29,7 @@ from core.logger import Logger
 from utils.constants import *
 
 # Module level constants
-DEBUG = True
+DEBUG = False
 
 
 def parse_cmds():
@@ -141,8 +141,11 @@ class DatasetGenerator(object):
         dataset = {TRAIN: self.train_set,
                    VAL: self.val_set,
                    TEST: self.test_set}
+        self.logger.info('Saving datasets (train/val/test) to dir: {}'.format(
+            os.path.dirname(output_filename)))
         for phase in dataset:
-            self._memory_usage(dataset[phase])
+            # self._memory_usage(dataset[phase])
+            self.logger.info('{} size: {}'.format(phase, dataset[phase].shape))
             dataset[phase].to_csv(output_filename.format(phase), index=False)
 
     def _get_images_paths(self):
@@ -268,8 +271,9 @@ class DatasetGenerator(object):
                              format(set, len(video), total_imgs, sorted(video)))
 
     def _memory_usage(self, df):
+        """Used for debugging"""
         nbytes = sum (block.values.nbytes for block in df.blocks.values ())
-        self.logger.info('Memory usage: {}'.format(nbytes))
+        # self.logger.info('Memory usage: {}'.format(nbytes))
 
 
 if __name__ == '__main__':
