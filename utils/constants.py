@@ -2,7 +2,7 @@ TRAIN = 'train'
 VAL = 'val'
 TEST = 'test'
 
-class Columns():
+class Col():
     IMAGES = 'images'
     LABEL = 'label'
     CATEGORY = 'category'
@@ -13,3 +13,8 @@ class Columns():
     N_LABELS = 'n_labels'
     VALID = 'valid'
     PHASE = 'phase'
+
+class Bat():
+    IMG = 'images'
+    BBOX = 'bboxes'
+    LBL = 'labels'
