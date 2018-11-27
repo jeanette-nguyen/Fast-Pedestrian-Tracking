@@ -10,10 +10,9 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
 
+from .d_util import read_image
 from utils.constants import *
 
-def main()
-    pass
 
 def get_dataloader(batch_size=1, shuffle=True, mode=TRAIN, num_workers=4):
     dataset = FastTrackDataset(mode=mode)
@@ -23,10 +22,21 @@ def get_dataloader(batch_size=1, shuffle=True, mode=TRAIN, num_workers=4):
 
 
 class FastTrackDataset(object):
-    def __init__(self, data_dir, mode):
+    """Bounding box dataset for Caltech Pedestrian
+
+
+    Dataset returns...
+
+    Bounding boxes are packed into...
+
+    Labels are packed into...
+    """
+    def __init__(self, data_dir, mode, set_id):
+        self.set_id = set_id
         self.mode = mode
         csv_file = os.path.join(data_dir, 'data_{}.csv'.format(self.mode))
-        self.data = pd.read_csv(csv_file)
+        data = pd.read_csv(csv_file)
+        self.data = self.data[data[Columns.SET] == self.set_id]
 
     def __getitem__(self, index):
         # Read image (N --> batch size)
@@ -44,6 +54,9 @@ class FastTrackDataset(object):
     def __len__(self):
         return len(self.data)
 
+    def get_example(self):
+        pass
+
 if __name__ == '__main__':
     import time
     import sys
@@ -54,5 +67,5 @@ if __name__ == '__main__':
     for i, batch in enumerate (loader):
         img = batch['rgb'].numpy ()
         lbl = batch['label'].numpy ()
-        print(img.shape, img.min (), img.max (), img.dtype)
-        print(lbl.shape, lbl.min (), lbl.max (), lbl.dtype)
+        print(img.shape, img.min(), img.max(), img.dtype)
+        print(lbl.shape, lbl.min(), lbl.max(), lbl.dtype)
