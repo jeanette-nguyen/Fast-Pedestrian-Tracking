@@ -9,17 +9,6 @@ from torch.nn import Parameter
 from torch.nn.modules.module import Module
 import torch.nn.functional as F
 
-
-
-model_url = {"vgg16": 'https://download.pytorch.org/models/vgg16-397923af.pth', 
-            "vgg16_bn": 'https://download.pytorch.org/models/vgg16_bn-6c64b313.pth'}
-cfg = {
-    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-}
-
 class PruningModule(Module):
     def prune_by_percentile(self, q=5.0, **kwargs):
         """
@@ -116,7 +105,7 @@ class VGG(PruningModule):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
     
-    
+
 def make_layers(cfg, batch_norm=False):
     layers = []
     in_channels = 3
@@ -132,10 +121,25 @@ def make_layers(cfg, batch_norm=False):
             in_channels = v
     return nn.Sequential(*layers)
 
-def vgg16(pretrained=False, **kwargs):
+model_url = {"vgg16": 'https://download.pytorch.org/models/vgg16-397923af.pth', 
+            "vgg16_bn": 'https://download.pytorch.org/models/vgg16_bn-6c64b313.pth'}
+cfg = {
+    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+}
+
+
+def vgg16(pretrained=False, mask=False, **kwargs):
+    features = make_layers(cfg['D'])
     if pretrained:
         kwargs['init_weights'] = False
-    model = VGG(make_layers(cfg['D']), **kwargs)
+    if mask:
+        kwargs['mask'] = True
+    else:
+        kwargs['mask'] = False
+    model = VGG(features, **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
     return model
