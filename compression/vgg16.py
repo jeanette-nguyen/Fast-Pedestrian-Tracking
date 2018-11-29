@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.model_zoo as model_zoo
 
 import math
 
@@ -106,9 +107,8 @@ class VGG(PruningModule):
                 nn.init.constant_(m.bias, 0)
     
 
-def make_layers(cfg, batch_norm=False):
+def make_layers(cfg, in_channels=3, batch_norm=False):
     layers = []
-    in_channels = 3
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
@@ -131,17 +131,28 @@ cfg = {
 }
 
 
-def vgg16(pretrained=False, mask=False, **kwargs):
-    features = make_layers(cfg['D'])
+def vgg16(pretrained=False, mask=False, in_channels=3, num_classes=1000, **kwargs):
+    features = make_layers(cfg['D'], in_channels=in_channels)
     if pretrained:
         kwargs['init_weights'] = False
     if mask:
         kwargs['mask'] = True
     else:
         kwargs['mask'] = False
-    model = VGG(features, **kwargs)
+    model = VGG(features, num_classes=num_classes, **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
+        pre_trained = model_zoo.load_url(model_url['vgg16'])
+        new = list(pre_trained.items())
+        curr_model_kvpair = model.state_dict()
+        count = 0
+        for k, v in curr_model_kvpair.items():
+            if "mask" in k:
+                continue
+            layer_name, weights = new[count]
+            curr_model_kvpair[k] = weights
+            count += 1
+        model.load_state_dict(curr_model_kvpair)
+        #model.load_state_dict(model_zoo.load_url(model_url['vgg16']))
     return model
 
 if __name__ == "__main__":
