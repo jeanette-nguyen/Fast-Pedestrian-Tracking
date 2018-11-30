@@ -64,6 +64,20 @@ cfg = {
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
+batch_norm_key = ["num_batches_tracked", "running_mean", "running_var"]
+
+def check_not_val(k):
+    a = "num_batches_tracked"
+    b = "running_mean"
+    c = "running_var"
+    d = "mask"
+    # if a in k or b in k or c in k or d in k:
+    if a in k or d in k:
+        return True
+    else:
+        return False
+    
+    
 
 def vgg16(pretrained=False, 
           mask=False,
@@ -93,15 +107,56 @@ def vgg16(pretrained=False,
                 print("new :", str(i[0]))
         count = 0
         for k, v in curr_model_kvpair.items():
-            if "mask" in k:
+            if check_not_val(k):
                 continue
+#             if "mask" in k or "num_batches_tracked" in k or "runing_mean" in k or "running_var" in k:
+#                 continue
             layer_name, weights = new[count]
             curr_model_kvpair[k] = weights
             count += 1
         model.load_state_dict(curr_model_kvpair)
-        #model.load_state_dict(model_zoo.load_url(model_url['vgg16']))
+        # model.load_state_dict(model_zoo.load_url(model_url['vgg16']))
     return model
-
+def vgg16_bn(pretrained=False,
+            mask=False,
+            in_channels=3,
+            num_classes=1000,
+            bias=True,
+            debug=False,
+            **kwargs):
+    features = make_layers(cfg['D'], 
+                           in_channels=in_channels,
+                           mask=mask,
+                           bias=bias,
+                           batch_norm=True)
+    if pretrained:
+        kwargs['init_weights'] = False
+    if mask:
+        kwargs['mask'] = True
+    else:
+        kwargs['mask'] = False
+    model = VGG(features, num_classes=num_classes, **kwargs)
+    if pretrained:
+        pre_trained = model_zoo.load_url(model_url['vgg16_bn'])
+        new = list(pre_trained.items())
+        curr_model_kvpair = model.state_dict()
+        if debug:
+            for k ,v in curr_model_kvpair.items():
+                print("curr : ", str(k))
+            for i in new:
+                print("new : ", str(i[0]))
+        count = 0
+        for k ,v in curr_model_kvpair.items():
+            if check_not_val(k):
+                continue
+#             if "mask" in k or ":
+#                 continue
+            layer_name, weights = new[count]
+            curr_model_kvpair[k] = weights
+            count += 1
+        model.load_state_dict(curr_model_kvpair)
+    return model
+    
 if __name__ == "__main__":
     print("Testing")
     vgg = vgg16()
