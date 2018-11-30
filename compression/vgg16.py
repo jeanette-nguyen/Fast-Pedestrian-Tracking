@@ -1,76 +1,9 @@
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
-import math
-
-import numpy as np
 import torch
-from torch.nn import Parameter
-from torch.nn.modules.module import Module
-import torch.nn.functional as F
+from PruningClasses import PruningModule, MaskedLinear, MaskedConvolution
 
-class PruningModule(Module):
-    def prune_by_percentile(self, q=5.0, **kwargs):
-        """
-        Prunes based off of percentile
-        """
-        al_parameters = []
-        for name, p in self.named_parameters():
-            # skip bias term for pruning
-            if 'bias' in name or 'mask' in name:
-                continue
-            tensor = p.data.cpu().numpy()
-            alive = tensor[np.nonzero(tensor)]
-            al_parameters.append(alive)
-        all_alive = np.concatenate(alive_parameters)
-        percentile_value = np.percentile(abs(all_alive), q)
-        print(f"Pruning with Threshold: {percentile_value}")
-        for name, module in self.named_modules():
-            if name in ['fc1', 'fc2', 'fc3']:
-                module.prune(threshold=percentile_value)
-    def prune_by_std(self, s=0.25):
-        for name, module in self.named_modules():
-            if name in ['fc1', 'fc2', 'fc3']:
-                threshold = np.std(module.weight.data.cupy().numpy()) * s
-                print(f'Pruning with threshold : {threshold} for layer {name}')
-                module.prune(threshold)
-                
-                
-class MaskedLinear(Module):
-    def __init__(self, in_features, out_features, bias=True):
-        super(MaskedLinear, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight = Parameter(torch.Tensor(out_features, in_features))
-        self.mask = Parameter(torch.ones([out_features, in_features]), requires_grad=False)
-        if bias:
-            self.bias = Parameter(torch.Tensor(out_features))
-        else:
-            self.register_parameter('bias', None)
-        self.reset_params()
-    def reset_params(self):
-        stdv = 1. / math.sqrt(self.weight.size(1))
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-stdv, stdv)
-    def forward(self, input):
-        return F.linear(input, self.weight * self.mask, self.bias)
-    def __repr__(self):
-        return self.__class__.__name__ + '(' \
-            + 'in_features=' + str(self.in_features) \
-            + ', out_feaetures=' + str(self.out_features) \
-            + ', bias=' + str(self.bias is not None) + ')'
-    def prune(self, threshold):
-        weight_dev = self.weight.device
-        mask_dev = self.mask.device
-        tensor = self.weight.data.cpu().numpy()
-        mask = self.mask.data.cpu().numpy()
-        new_mask = np.where(abs(tensor) < threshold, 0, mask)
-        self.weight_data = torch.from_numpy(tensor * new_mask).to(weight_dev)
-        self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
-
-        
 class VGG(PruningModule):
     def __init__(self, features, num_classes=1000, init_weights=True, mask=False):
         super(VGG, self).__init__()
@@ -107,13 +40,14 @@ class VGG(PruningModule):
                 nn.init.constant_(m.bias, 0)
     
 
-def make_layers(cfg, in_channels=3, batch_norm=False):
+def make_layers(cfg, in_channels=3, mask=False, batch_norm=False):
+    Conv2d = MaskedConvolution if mask else nn.Conv2d
     layers = []
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            conv2d = Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -132,7 +66,7 @@ cfg = {
 
 
 def vgg16(pretrained=False, mask=False, in_channels=3, num_classes=1000, **kwargs):
-    features = make_layers(cfg['D'], in_channels=in_channels)
+    features = make_layers(cfg['D'], in_channels=in_channels, mask=mask)
     if pretrained:
         kwargs['init_weights'] = False
     if mask:
