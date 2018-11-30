@@ -34,10 +34,11 @@ class RPN(nn.Module):
         super(RPN, self).__init__()
         bn = cfg.bn
         self.bf = 10 #balancing factor
-        self.feature_stride = cfg.rpn_feature_stride
+        self.img_size = cfg.img_size
+        self.feat_stride = cfg.rpn_feat_stride
         self.anchor_scales = cfg.anchor_scales
         self.anchor_ratios = cfg.anchor_ratios
-        self.anchor_bases = bbox.generate_base_anchors()
+        self.base_anchors = bbox.generate_base_anchors()
         self.training = cfg.training
 
 
@@ -84,7 +85,7 @@ class RPN(nn.Module):
             self.conv1.weight = nn.Parameter(torch.from_numpy(params['rpn.conv1.conv.weight'][()]))
  
 
-    def forward(self, x, image_size):
+    def forward(self, x):
         """
         n = batch size 
         h = height of feature map after shared network
@@ -103,9 +104,7 @@ class RPN(nn.Module):
         cls_score = cls_score.permute(0,2,3,1).contiguous() 
         #[n, h, w, len(ratios)xlen(scales)x2]
         
-        fg_score = F.softmax(cls_score.view(n,h,w,anchors.shape[0],2),dim=4)
-        #how the repository reshapes
-        #fg_score = F.softmax(cls_score.view(n,h,w,anchors.shape[0]//(h*w),2),dim=4)
+        fg_score = F.softmax(cls_score.view(n,h,w,self.base_anchors.shape[0],2),dim=4)
         fg_score = fg_score[:,:,:,:,1].contiguous()
         fg_score = fg_score.view(n, -1) #(n, number of base anchors per image)
 
@@ -125,11 +124,13 @@ class RPN(nn.Module):
             roi = self.proposal_layer(bbox_offsets[i,:,:].data.numpy(), 
                                       fg_score[i,:].data.numpy(),
                                       anchors,
-                                      image_size)
+                                      self.img_size)
             rois.append(roi)
             roi_indices.append(i*np.ones((len(roi),)))
         rois = np.concatenate(rois,axis=0)
         roi_indices = np.concatenate(roi_indices, axis=0)
+
+        return rois, roi_indices
 
 
 

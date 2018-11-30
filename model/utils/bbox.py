@@ -76,9 +76,9 @@ def create_anchors(ws,hs,x_center,y_center):
         the widths
     h: np array
         the heights
-    x_center: int
+    x_center: np array 
         x-axis center
-    y_center: int
+    y_center: np array
         y-axis center
 
     Returns
@@ -86,9 +86,11 @@ def create_anchors(ws,hs,x_center,y_center):
     The anchors centered around (x_center,y_center) with corresponding
     widths and heights.
     """
-    ws = ws[:, np.newaxis] #make column vector
-    hs = hs[:, np.newaxis] #make column vector
-
+    #make column vectors
+    ws = ws[:, np.newaxis]
+    hs = hs[:, np.newaxis]
+    x_center = x_center[:, np.newaxis]
+    y_center = y_center[:, np.newaxis]
     #[y_min, x_min, y_max, x_max]
     anchors = np.hstack((y_center - 0.5*hs,
                          x_center - 0.5*ws,
@@ -144,7 +146,7 @@ def generate_shifted_anchors(base_anchors,height,width):
     -------
     All possible A*K = R regional proposals
     """
-    feat_stride = cfg.feat_stride
+    feat_stride = cfg.rpn_feat_stride
 
     # 1 shift in feature map = feat_stride shift in input image
     x_shift = np.arange(0,width*feat_stride,feat_stride)
@@ -179,27 +181,31 @@ def loc2bbox(anchors, locs):
 
     Returns
     -------
+    np array - shape (R, 4)
     The regional proposals in an input image.
 
     """
-
-    dy = loc[:, 0::4]
-    dx = loc[:, 1::4]
-    dh = loc[:, 2::4]
-    dw = loc[:, 3::4]
+    # dy = locs[:, 0::4]
+    # dx = locs[:, 1::4]
+    # dh = locs[:, 2::4]
+    # dw = locs[:, 3::4]
+    dy = locs[:, 0]
+    dx = locs[:, 1]
+    dh = locs[:, 2]
+    dw = locs[:, 3]
 
     ws, hs, x_centers, y_centers = center_anchor(anchors)
 
     bbox_heights = np.exp(dh)*hs 
     bbox_widths = np.exp(dw)*ws
-    bbox_center_y = dy*hs[:, np.newaxis] + y_centers[:, np.newaxis]
-    bbox_center_x = dx*ws[:, np.newaxis] + x_centers[:, np.newaxis]
-
-
-    return create_anchors(bbox_widths,
+    bbox_center_y = dy*hs + y_centers
+    bbox_center_x = dx*ws + x_centers
+    bbox = create_anchors(bbox_widths,
                           bbox_heights,
                           bbox_center_x,
                           bbox_center_y)
+    #print("loc2bbox" + str(bbox.shape))
+    return bbox
 
 
 

@@ -8,6 +8,7 @@ from torchvision import models
 
 from utils import config as cfg
 from utils import bbox as bbox
+from utils.nms import non_maximum_suppression
 
 class ProposalLayer(object):
     """
@@ -38,13 +39,15 @@ class ProposalLayer(object):
             The offsets from the base anchor the region proposal should have.
             It consists of len(scales)*len(ratios) different offsets, one
             for each different base anchors which have same center
+            Shape is [len(scales)*len(ratios),4]
         scores: np array
             Each index indicates the probability that an object is contained
             in an anchor
-            Shape is (1, number of base anchors per image)
+            Shape is (number of base anchors per image R,)
         anchors: np array
             All possible region proposals
-        img_size: (haven't defined yet)
+            Shape is (R,4)
+        img_size: tuple
             The size of the input image
 
         Returns
@@ -57,20 +60,27 @@ class ProposalLayer(object):
             pre_nms = self.pre_nms_test
             post_nms = self.post_nms_test
 
-        min_size = cfg.min_size
         rois = bbox.loc2bbox(anchors, locs) 
         #shape is (R, 4) - dim 2 is [y_min, x_min, y_max, x_max]
-
+        #print(rois.shape)
+        
         # clip rois to be in image 
-        rois[:, slice(0,4,2)] = np.clip(rois, 0, img_size[0]) #height
-        rois[:, slice(1,4,2)] = np.clip(rois, 0, img_size[1]) #width
+        rois[:, 0] = np.clip(rois[:, 0], 0, img_size[0])
+        rois[:, 1] = np.clip(rois[:,1], 0, img_size[1])
+        rois[:, 2] = np.clip(rois[:,2], 0, img_size[0])
+        rois[:, 3] = np.clip(rois[:,3], 0, img_size[1])
+        #rois[:, slice(0,4,2)] = np.clip(rois[:], 0, img_size[0]) #height
+        #rois[:, slice(1,4,2)] = np.clip(rois, 0, img_size[1]) #width
 
         #remove rois that are < minimum size in height or width
         hs = rois[:, 2]-rois[:,0]
         ws = rois[:,3]-rois[:,1]
-        keep = np.where(hs[:, np.newaxis] >= min_size and 
-                        ww[:, np.newaxis] >= min_size)[0]
+        #keep1 = np.where(hs[:, np.newaxis] >= self.min_size)[0]
+        #keep2 = np.where(ws[:, np.newaxis] >= self.min_size)[0]
+        keep = np.intersect1d(np.where(hs[:, np.newaxis] >= self.min_size)[0],
+                              np.where(ws[:, np.newaxis] >= self.min_size)[0])
         rois = rois[keep, :]
+
         scores = scores[keep]
         orders = scores.ravel().argsort()
 
