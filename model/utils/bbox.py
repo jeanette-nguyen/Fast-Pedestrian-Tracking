@@ -1,5 +1,5 @@
 import numpy as np
-import config
+from utils import config as cfg
 
 def center_anchor(anchor):
     """
@@ -8,16 +8,16 @@ def center_anchor(anchor):
     Parameters
     ----------
     anchor: np array
-    [x_rightmost, y_topmost, x_leftmost, y_bottommost]
+    [y_min, x_min, y_max, x_max]
     
     Returns
     -------
-    The indices indicating an anchor's width, height, and center.
+    The values indicating an anchor's width, height, and center.
     """
-    w = anchor[2] - anchor[0] + 1
-    h = anchor[3] - anchor[1] + 1
-    x_center = anchor[2]-anchor[0]+1
-    y_center = anchor[3] - anchor[1] +1
+    w = anchor[:,3] - anchor[:,1] + 1
+    h = anchor[:,2] - anchor[:,0] + 1
+    x_center = anchor[:,1] + 0.5*w
+    y_center = anchor[:,0] + 0.5*h
     return w, h, x_center, y_center
 
 def set_scale(anchor, scales):
@@ -88,10 +88,12 @@ def create_anchors(ws,hs,x_center,y_center):
     """
     ws = ws[:, np.newaxis] #make column vector
     hs = hs[:, np.newaxis] #make column vector
-    anchors = np.hstack((x_center - 0.5*ws,
-                         y_center - 0.5*hs,
-                         x_center + 0.5*ws,
-                         y_center + 0.5*hs))
+
+    #[y_min, x_min, y_max, x_max]
+    anchors = np.hstack((y_center - 0.5*hs,
+                         x_center - 0.5*ws,
+                         y_center + 0.5*hs,
+                         x_center + 0.5*ws))
     return anchors
 
 def generate_base_anchors():
@@ -113,9 +115,10 @@ def generate_base_anchors():
     ratios = np.array(cfg.anchor_ratios)
     scales = np.array(cfg.anchor_scales)
 
-    base_anchor = np.asarray([1,1,base_size,base_size]) - 1
+    #[y_min, x_min, y_max, x_max]
+    base_anchor = np.asarray([1,1,base_size,base_size]).reshape(1,-1) - 1
     base_anchors = set_ratio(base_anchor, ratios)
-    base_anchors = np.vstack([set_scale(base_anchors[i,:], scales) 
+    base_anchors = np.vstack([set_scale(base_anchors[i,:].reshape(1,-1), scales) 
                               for i in range(0,base_anchors.shape[0])])
     return base_anchors
 
@@ -157,7 +160,7 @@ def generate_shifted_anchors(base_anchors,height,width):
     anchors = base_anchors.reshape((1,A,4)) + shift.reshape((1,K,4)).transpose((1,0,2))
     return anchors.reshape((-1,4)).astype(np.float32)
 
-def anchor2bbox(anchors, loc):
+def loc2bbox(anchors, locs):
     """
     Given the base anchors, determine the region proposal from the base anchors
     in the input image.
@@ -166,7 +169,8 @@ def anchor2bbox(anchors, loc):
     ----------
     anchors: np array
         All base anchors in an image
-        Shape is (R, 4)
+        Shape is (R, 4), 
+        The second index is [y_min, x_min, y_max, x_max]
         Note: R=K*A, where A=len(scales)*len(ratios)
     loc: np array
         The adjustment each anchor should have based off the bounding box
@@ -175,16 +179,27 @@ def anchor2bbox(anchors, loc):
 
     Returns
     -------
-    The regional proposals in an input image. 
+    The regional proposals in an input image.
+
     """
 
+    dy = loc[:, 0::4]
+    dx = loc[:, 1::4]
+    dh = loc[:, 2::4]
+    dw = loc[:, 3::4]
+
+    ws, hs, x_centers, y_centers = center_anchor(anchors)
+
+    bbox_heights = np.exp(dh)*hs 
+    bbox_widths = np.exp(dw)*ws
+    bbox_center_y = dy*hs[:, np.newaxis] + y_centers[:, np.newaxis]
+    bbox_center_x = dx*ws[:, np.newaxis] + x_centers[:, np.newaxis]
 
 
-
-
-
-
-
+    return create_anchors(bbox_widths,
+                          bbox_heights,
+                          bbox_center_x,
+                          bbox_center_y)
 
 
 

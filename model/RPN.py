@@ -12,9 +12,9 @@ from utils import config as cfg
 from utils import proposal_layer as proposal_layer
 
 
-def reshape(x,d):
-    x = x.view(x.size(0), d, x.size(1)*x.size(2)/d, x.size(3))
-    return x
+# def reshape(x,d):
+#     x = x.view(x.size(0), d, x.size(1)*x.size(2)/d, x.size(3))
+#     return x
 
 class RPN(nn.Module):
     """
@@ -37,9 +37,9 @@ class RPN(nn.Module):
         self.feature_stride = cfg.rpn_feature_stride
         self.anchor_scales = cfg.anchor_scales
         self.anchor_ratios = cfg.anchor_ratios
-        self.anchor_bases = bbox.generate_anchor_bases()
-        
-        
+        self.anchor_bases = bbox.generate_base_anchors()
+        self.training = cfg.training
+
 
         self.conv1 = network.Conv2d(512, 512, 3, 1, relu=True, bn=bn)
 
@@ -55,7 +55,7 @@ class RPN(nn.Module):
                                         bn=bn)
 
         
-        self.proposal_layer = proposal_layer(self)
+        self.proposal_layer = proposal_layer.ProposalLayer(self)
 
         # loss
         self.cls_loss = None
@@ -64,11 +64,11 @@ class RPN(nn.Module):
         if pretrained:
             self.init_pretrained_model()
 
-    @property
-    def loss(self):
+    # @property ?
+    # def loss(self):
 
-        self._loss = self.cls_loss + self.bf*self.bbox_loss
-        return self._loss
+    #     self._loss = self.cls_loss + self.bf*self.bbox_loss
+    #     return self._loss
     
     """
     Initialize the unique RPN weights pretrained weights. 
@@ -76,8 +76,8 @@ class RPN(nn.Module):
     def init_pretrained_model(self,file = 'VGGnet_fast_rcnn_iter_70000.h5'):
         if (file == 'VGGnet_fast_rcnn_iter_70000.h5'):
             params = h5py.File(file, 'r')
-            self.score_conv.bias = nn.Parameter(torch.from_numpy(params['rpn.score_conv.conv.bias'][()]))
-            self.score_conv.weight = nn.Parameter(torch.from_numpy(params['rpn.score_conv.conv.weight'][()]))
+            self.cls_conv.bias = nn.Parameter(torch.from_numpy(params['rpn.score_conv.conv.bias'][()]))
+            self.cls_conv.weight = nn.Parameter(torch.from_numpy(params['rpn.score_conv.conv.weight'][()]))
             self.bbox_conv.bias = nn.Parameter(torch.from_numpy(params['rpn.bbox_conv.conv.bias'][()]))
             self.bbox_conv.weight = nn.Parameter(torch.from_numpy(params['rpn.bbox_conv.conv.weight'][()]))
             self.conv1.bias = nn.Parameter(torch.from_numpy(params['rpn.conv1.conv.bias'][()]))
@@ -87,9 +87,10 @@ class RPN(nn.Module):
     def forward(self, x, image_size):
         """
         n = batch size 
-        h = height of feature map after shared layers
-        w = width of feature map after shared layers
+        h = height of feature map after shared network
+        w = width of feature map after shared network
         """
+        #[n, c_out, h, w]
         n, _, h, w = x.shape
 
         #Get all base anchors in the original input image
@@ -99,18 +100,21 @@ class RPN(nn.Module):
 
         # Classification 
         cls_score = self.cls_conv(x)
-        cls_score = cls_score.permute(0,2,3,1).contiguous()
+        cls_score = cls_score.permute(0,2,3,1).contiguous() 
+        #[n, h, w, len(ratios)xlen(scales)x2]
         
         fg_score = F.softmax(cls_score.view(n,h,w,anchors.shape[0],2),dim=4)
+        #how the repository reshapes
+        #fg_score = F.softmax(cls_score.view(n,h,w,anchors.shape[0]//(h*w),2),dim=4)
         fg_score = fg_score[:,:,:,:,1].contiguous()
         fg_score = fg_score.view(n, -1) #(n, number of base anchors per image)
 
         cls_score = cls_score.view(n, -1, 2)
 
         # Bounding box offsets to apply to anchors to obtain region proposals
-        bbox_out = self.bbox_conv(x)
-        bbox_out = bbox_out.permute(0,2,3,1).contiguous()
-        bbox_out = bbox_out.view(n, -1, 4) # -1 -> len(scales)*len(ratios)
+        bbox_offsets = self.bbox_conv(x)
+        bbox_offsets = bbox_offsets.permute(0,2,3,1).contiguous()
+        bbox_offsets = bbox_offsets.view(n, -1, 4) # -1 -> len(scales)*len(ratios)
 
 
         # Generate RoIs
@@ -118,7 +122,7 @@ class RPN(nn.Module):
         roi_indices = []
         for i in range(n):
             # Get all regional proposals for the input image i
-            roi = self.proposal_layer(bbox_out[i,:,:].data.numpy(), 
+            roi = self.proposal_layer(bbox_offsets[i,:,:].data.numpy(), 
                                       fg_score[i,:].data.numpy(),
                                       anchors,
                                       image_size)

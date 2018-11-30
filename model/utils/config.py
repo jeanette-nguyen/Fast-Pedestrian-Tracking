@@ -1,4 +1,5 @@
 bn = False # Batch normalization
+training = True
 
 # RPN parameters
 anchor_scales = [8, 16, 32]
