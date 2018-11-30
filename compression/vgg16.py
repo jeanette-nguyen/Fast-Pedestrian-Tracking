@@ -40,14 +40,14 @@ class VGG(PruningModule):
                 nn.init.constant_(m.bias, 0)
     
 
-def make_layers(cfg, in_channels=3, mask=False, batch_norm=False):
+def make_layers(cfg, in_channels=3, mask=False, batch_norm=False, bias=True):
     Conv2d = MaskedConvolution if mask else nn.Conv2d
     layers = []
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = Conv2d(in_channels, v, kernel_size=3, padding=1)
+            conv2d = Conv2d(in_channels, v, kernel_size=3, padding=1, bias=bias)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -65,8 +65,16 @@ cfg = {
 }
 
 
-def vgg16(pretrained=False, mask=False, in_channels=3, num_classes=1000, **kwargs):
-    features = make_layers(cfg['D'], in_channels=in_channels, mask=mask)
+def vgg16(pretrained=False, 
+          mask=False,
+          in_channels=3,
+          num_classes=1000,
+          bias=True,
+          debug=False,
+          **kwargs):
+    features = make_layers(cfg['D'], 
+                           in_channels=in_channels, 
+                           mask=mask, bias=bias)
     if pretrained:
         kwargs['init_weights'] = False
     if mask:
@@ -78,6 +86,11 @@ def vgg16(pretrained=False, mask=False, in_channels=3, num_classes=1000, **kwarg
         pre_trained = model_zoo.load_url(model_url['vgg16'])
         new = list(pre_trained.items())
         curr_model_kvpair = model.state_dict()
+        if debug:
+            for k, v in curr_model_kvpair.items():
+                print("curr :", str(k))
+            for i in new:
+                print("new :", str(i[0]))
         count = 0
         for k, v in curr_model_kvpair.items():
             if "mask" in k:
