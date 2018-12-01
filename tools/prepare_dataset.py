@@ -115,12 +115,12 @@ class DatasetGenerator(object):
         test = {'set%02d' % i: TEST for i in range (6, 11)}
         map_phase = train.copy()
         map_phase.update(test)
-        dataset[Columns.PHASE] = dataset[Columns.SET].map(map_phase)
+        dataset[Col.PHASE] = dataset[Col.SET].map(map_phase)
 
         # groupby sets 10% of each as valid
-        self.train_set = dataset[dataset[Columns.PHASE] == TRAIN]
-        self.test_set = dataset[dataset[Columns.PHASE] == TEST]
-        grouped_sets = self.train_set.groupby(Columns.SET)
+        self.train_set = dataset[dataset[Col.PHASE] == TRAIN]
+        self.test_set = dataset[dataset[Col.PHASE] == TEST]
+        grouped_sets = self.train_set.groupby(Col.SET)
         self.val_set = pd.DataFrame()
         for s, s_df in grouped_sets:
             sample_size = int(np.floor(.10*s_df.shape[0]))
@@ -190,8 +190,8 @@ class DatasetGenerator(object):
                                            'data/annotations.json')))
 
     def _prepare_dataset(self):
-        self.dataset[Columns.IMAGES] = np.array(self.images)[:, 0]
-        self.dataset[Columns.VALID] = np.array(self.images)[:, 1]
+        self.dataset[Col.IMAGES] = np.array(self.images)[:, 0]
+        self.dataset[Col.VALID] = np.array(self.images)[:, 1]
         self.dataset_df = pd.DataFrame(self.dataset)
 
         # Split image filenames and clean up strings
@@ -203,10 +203,10 @@ class DatasetGenerator(object):
         lbl = []
         n_lbls = []
         for idx, row in self.dataset_df.iterrows():
-            data = self.annotations[row[Columns.SET]][row[Columns.VIDEO]][
-            Columns.FRAME + 's']
-            if str(row[Columns.FRAME]) in data:
-                data = data[str(row[Columns.FRAME])]
+            data = self.annotations[row[Col.SET]][row[Col.VIDEO]][
+                Col.FRAME + 's']
+            if str(row[Col.FRAME]) in data:
+                data = data[str(row[Col.FRAME])]
                 coordinates = [datum['pos'] for datum in data]
                 label = [datum['lbl'] for datum in data]
                 n_lbls.append(len(coordinates))
@@ -216,9 +216,9 @@ class DatasetGenerator(object):
                 n_lbls.append(0)
                 coord.append(np.nan)
                 lbl.append(np.nan)
-        self.dataset_df[Columns.COORD] = coord
-        self.dataset_df[Columns.LABEL] = lbl
-        self.dataset_df[Columns.N_LABELS] = n_lbls
+        self.dataset_df[Col.COORD] = coord
+        self.dataset_df[Col.LABEL] = lbl
+        self.dataset_df[Col.N_LABELS] = n_lbls
 
         self.logger.info('Loaded annotations. Number of frames w/out '
                          'annotations\n{}'.format(self.dataset_df.isna().sum()))
@@ -231,38 +231,38 @@ class DatasetGenerator(object):
 
     def _clean_up_filenames(self):
         """Grab meta data from filenames"""
-        col_names = [Columns.SET, Columns.VIDEO, Columns.FRAME]
-        self.dataset_df[Columns.IMAGES] = self.dataset_df[Columns.IMAGES].apply(
+        col_names = [Col.SET, Col.VIDEO, Col.FRAME]
+        self.dataset_df[Col.IMAGES] = self.dataset_df[Col.IMAGES].apply(
             lambda x: os.path.basename(x))
         self.dataset_df[col_names] = self.dataset_df[
-            Columns.IMAGES].str.split('_', expand=True)
-        self.dataset_df[Columns.FRAME] = self.dataset_df[
-            Columns.FRAME].str.split('.').str[0].astype(int)
+            Col.IMAGES].str.split('_', expand=True)
+        self.dataset_df[Col.FRAME] = self.dataset_df[
+            Col.FRAME].str.split('.').str[0].astype(int)
         data_dir = os.path.join(self.src_dir, 'data/images')
-        self.dataset_df[Columns.IMAGES] = data_dir + '/' + self.dataset_df[
-            Columns.IMAGES]
+        self.dataset_df[Col.IMAGES] = data_dir + '/' + self.dataset_df[
+            Col.IMAGES]
 
     def _group_objects(self):
         """Create helper dictionaries for accessing image files"""
-        self.sets2videos = self.dataset_df.groupby (Columns.SET)[
-            Columns.VIDEO].apply(set).to_dict()
-        self.videos2frames = self.dataset_df.groupby (Columns.VIDEO)[
-            Columns.IMAGES].apply(set).to_dict()
-        self.sets2frames = self.dataset_df.groupby (Columns.SET)[
-            Columns.IMAGES].apply(list).to_dict()
+        self.sets2videos = self.dataset_df.groupby (Col.SET)[
+            Col.VIDEO].apply(set).to_dict()
+        self.videos2frames = self.dataset_df.groupby (Col.VIDEO)[
+            Col.IMAGES].apply(set).to_dict()
+        self.sets2frames = self.dataset_df.groupby (Col.SET)[
+            Col.IMAGES].apply(list).to_dict()
 
     def _convert_nans(self):
         """Fill NaN values"""
         self.dataset_df = self.dataset_df.fillna(value='[[0, 0, 0, 0]]')
         self.logger.info('Total annotations: {}'.
-                          format(self.dataset_df[Columns.N_LABELS].sum()))
+                         format(self.dataset_df[Col.N_LABELS].sum()))
         self.logger.info('Dataset size: {}'.format(self.dataset_df.shape))
 
 
     def _report_distribution(self):
         """Report distributions"""
         Logger.section_break('Image per video distribution')
-        self.logger.info(self.dataset_df[Columns.VIDEO].value_counts().sort_index())
+        self.logger.info(self.dataset_df[Col.VIDEO].value_counts().sort_index())
 
         Logger.section_break('Videos per set distribution')
         for set, video in sorted(self.sets2videos.items()):
