@@ -5,6 +5,14 @@ import torch
 from PruningClasses import PruningModule, MaskedLinear, MaskedConvolution
 
 class VGG(PruningModule):
+    """
+    Modified VGG Network to support pruning and quantization of weights
+    Args:
+        features: feature extraction portion of the VGG
+        num_classes: number of classes in dataset
+        init_weights: boolean to initialize weights. If loading pretrained, pass in False
+        mask: Whether to load VGG such that it supports pruning
+    """
     def __init__(self, features, num_classes=1000, init_weights=True, mask=False):
         super(VGG, self).__init__()
         linear = MaskedLinear if mask else nn.Linear
@@ -21,12 +29,24 @@ class VGG(PruningModule):
         if init_weights:
             self._initialize_weights(linear)
     def forward(self, x):
+        """
+        Performs the forward pass of the network
+        Args:
+            x: data to perform forward pass
+        Return:
+            x: data after forward pass
+        """
         x = self.features(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
     
     def _initialize_weights(self, linear):
+        """
+        Performs initialization of weights
+        Args:
+            linear: linear layer type to initialize
+        """
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -38,6 +58,11 @@ class VGG(PruningModule):
             elif isinstance(m, linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
+    
+    def load(self, torch_model):
+        m = torch.load(torch_model)
+        sd = m.state_dict()
+        self.load_state_dict(sd)
     
 
 def make_layers(cfg, in_channels=3, mask=False, batch_norm=False, bias=True):
