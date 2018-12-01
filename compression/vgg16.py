@@ -62,6 +62,7 @@ cfg = {
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'toy': [64, 'M', 512, 'M']
 }
 
 batch_norm_key = ["num_batches_tracked", "running_mean", "running_var"]
@@ -156,7 +157,24 @@ def vgg16_bn(pretrained=False,
             count += 1
         model.load_state_dict(curr_model_kvpair)
     return model
-    
+
+def vgg_toy(mask=False,
+            in_channels=1,
+            num_classes=1000,
+            bias=True,
+            debug=False,
+            **kwargs):
+    if mask:
+        kwargs['mask'] = True
+    else:
+        kwargs['mask'] = False
+    features = make_layers(cfg['toy'],
+                            in_channels=in_channels,
+                            mask=mask,
+                            batch_norm=False)
+    model = VGG(features, num_classes=num_classes, **kwargs)
+    return model
+
 if __name__ == "__main__":
     print("Testing")
     vgg = vgg16()
