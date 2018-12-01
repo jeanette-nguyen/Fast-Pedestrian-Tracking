@@ -57,7 +57,7 @@ class PruningModule(Module):
             if 'Masked' in str(module) and 'Sequential' not in str(module):
                 if debug:
                     print("Pruning : ", str(name))
-                threshold = np.std(module.weight.data.cupy().numpy()) * s
+                threshold = np.std(module.weight.data.cpu().numpy()) * s
                 print(f'Pruning with threshold : {threshold} for layer {name}')
                 module.prune(threshold)
 
