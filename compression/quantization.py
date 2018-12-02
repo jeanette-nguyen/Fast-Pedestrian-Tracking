@@ -15,7 +15,7 @@ def quantize(model, bits=5):
         weight = module.weight.data.cpu().numpy()
         shape = weight.shape
         if len(shape) == 2:
-            if r < c:
+            if shape[0] < shape[1]:
                 matrix = csr_matrix(weight)
             else:
                 matrix = csc_matrix(weight)
@@ -31,7 +31,7 @@ def quantize(model, bits=5):
             assert len(shape) == 4, "must be 2 or 4 for FC layers or convolution filters"
             for in_c in range(shape[0]):
                 for out_c in range(shape[1]):
-                    k = weight[in_c, out_c, :, :]
+                    k = weight[out_c, in_c, :, :]
                     shape_k = k.shape
                     matrix = csr_matrix(weight[in_c, out_c, :, :]) if shape_k[0] < shape_k[1] else csc_matrix(weight)
                     mmin = min(matrix.data)
@@ -41,4 +41,4 @@ def quantize(model, bits=5):
                     kmeans.fit(matrix.data.reshape(-1, 1))
                     new_weights = kmeans.cluster_centers_[kmeans.labels_].reshape(-1)
                     matrix.data = new_weights
-                    module.weight[in_c, out_c].data = torch.from_numpy(matrix.toarray()).to(dev)
+                    module.weight[out_c, in_c].data = torch.from_numpy(matrix.toarray()).to(dev)
