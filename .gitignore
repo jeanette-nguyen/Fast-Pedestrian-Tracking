@@ -5,3 +5,5 @@ core/*.pyc
 tools/*.pyc
 tests/*
 dataset/*
+checkpoints/*
+utils/*.pyc
