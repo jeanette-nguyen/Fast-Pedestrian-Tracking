@@ -15,6 +15,7 @@ class VGG(PruningModule):
     """
     def __init__(self, features, num_classes=1000, init_weights=True, mask=False):
         super(VGG, self).__init__()
+        self.mask = mask
         linear = MaskedLinear if mask else nn.Linear
         self.features = features
         self.classifier = nn.Sequential(
