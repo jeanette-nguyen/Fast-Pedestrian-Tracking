@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from scipy.sparse import csc_matrix, csr_matrix
 
-def quantize(model, bits=5):
+def quantize(model, bits=5, verbose=False):
     """
     Performs quantization on the weights through the use of KMeans
     Args:
@@ -50,8 +50,10 @@ def quantize(model, bits=5):
                                 matrix.data = new_weights
                                 module.weight[out_c, in_c].data = torch.from_numpy(matrix.toarray()).to(dev)
                             except:
-                                continue
+                                if verbose:
+                                    print("No weights in {}{} of {}".format(out_c, in_c, str(module)))
                 print("Done quantizingg {}".format(str(module)))
             except:
-                print("No weights in module {}".format(str(module)))
+                if verbose:
+                    print("No weights in module {}".format(str(module)))
                 
