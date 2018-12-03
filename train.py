@@ -23,15 +23,29 @@ import resource
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (20480, rlimit[1]))
 
+def transform_bbox(bbox_):
+    """
+    Transforms caltech pedestrian bbox to same format as VOC
+    Args:
+        bbox_: tensor of {x_min, y_min, width, height}
+    Returns:
+        bbox_: tensor of {y_min, x_min, y_max, x_max}
+    """
+    bbox_[:, :, 2] += bbox_[:, :, 0]
+    bbox_[:, :, 3] += bbox_[:, :, 1]
+    bbox_[:, :, 0], bbox_[:, :, 1] = bbox_[:, :, 1], bbox_[:, :, 0]
+    bbox_[:, :, 2], bbox_[:, :, 3] = bbox_[:, :, 3], bbox_[:, :, 2]
+    return bbox_
+
 def eval(dataloader, faster_rcnn, test_num=10000):
+    print("\nEVAL")
     pred_bboxes, pred_labels, pred_scores = list(), list(), list()
-    gt_bboxes, gt_labels, gt_difficults = list(), list(), list()
-    for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in tqdm(enumerate(dataloader)):
+    gt_bboxes, gt_labels = list(), list()
+    for ii, (imgs, sizes, gt_bboxes_, gt_labels_) in tqdm(enumerate(dataloader)):
         sizes = [sizes[0][0].item(), sizes[1][0].item()]
         pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(imgs, [sizes])
-        gt_bboxes += list(gt_bboxes_.numpy())
+        gt_bboxes += list(transform_bbox(gt_bboxes_.numpy()))
         gt_labels += list(gt_labels_.numpy())
-        gt_difficults += list(gt_difficults_.numpy())
         pred_bboxes += pred_bboxes_
         pred_labels += pred_labels_
         pred_scores += pred_scores_
@@ -39,8 +53,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 
     result = eval_detection_voc(
         pred_bboxes, pred_labels, pred_scores,
-        gt_bboxes, gt_labels, gt_difficults,
-        use_07_metric=True)
+        gt_bboxes, gt_labels, use_07_metric=True)
     return result
 
 def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
@@ -48,11 +61,9 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for ii, (img, bbox_, label_, scale) in pbar:
+            # Currently configured to predict (y_min, x_min, y_max, x_max)
             bbox_tmp = bbox_.clone()
-            bbox_[:, :, 2] += bbox_[:, :, 0]
-            bbox_[:, :, 3] += bbox_[:, :, 1]
-            bbox_[:, :, 0], bbox_[:, :, 1] = bbox_[:, :, 1], bbox_[:, :, 0]
-            bbox_[:, :, 2], bbox_[:, :, 3] = bbox_[:, :, 3], bbox_[:, :, 2]
+            bbox_ = transform_bbox(bbox_)
             scale = at.scalar(scale)
             
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
@@ -63,7 +74,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 roiloc = losses[2].cpu().data.numpy()
                 roicls = losses[3].cpu().data.numpy()
                 tot = losses[4].cpu().data.numpy()
-                pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}")
+                pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}\r")
             if (ii + 1) % 1000 == 0:
                 print(trainer.get_meter_data())
                 try:
@@ -81,8 +92,8 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                                         at.tonumpy(_scores[0]))
                     plt.show()
                 except:
-                    print("Error in displaying images")
-                    
+                    print("Cannot display images")
+                
                 
         eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
