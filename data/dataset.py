@@ -1,7 +1,6 @@
 from __future__ import  absolute_import
 from __future__ import  division
 import torch as t
-from data.voc_dataset import VOCBboxDataset
 from data.caltech_dataset import CaltechBboxDataset
 from skimage import transform as sktsf
 from torchvision import transforms as tvtsf

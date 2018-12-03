@@ -7,7 +7,7 @@ from pprint import pprint
 
 class Config:
     # data
-    voc_data_dir = '/datasets/home/85/285/ktl014/Fast-Pedestrian-Tracking/data'
+    voc_data_dir = '../dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 8
