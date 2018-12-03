@@ -4,4 +4,4 @@ data/*.log
 core/*.pyc
 tools/*.pyc
 tests/*
-data/*
+dataset/*

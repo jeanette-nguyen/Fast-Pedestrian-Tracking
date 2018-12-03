@@ -85,9 +85,9 @@ def vis_bbox(img, bbox, label=None, score=None, ax=None):
         return ax
 
     for i, bb in enumerate(bbox):
-        xy = (bb[0], bb[1])
-        height = bb[3]
-        width = bb[2]
+        xy = (bb[1], bb[0])
+        height = bb[2] - bb[0]
+        width = bb[3] - bb[1]
         ax.add_patch(plot.Rectangle(
             xy, width, height, fill=False, edgecolor='red', linewidth=2))
 
@@ -103,7 +103,7 @@ def vis_bbox(img, bbox, label=None, score=None, ax=None):
             caption.append('{:.2f}'.format(sc))
 
         if len(caption) > 0:
-            ax.text(bb[0], bb[1],
+            ax.text(bb[1], bb[0],
                     ': '.join(caption),
                     style='italic',
                     bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 0})
