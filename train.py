@@ -66,20 +66,23 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}")
             if (ii + 1) % 1000 == 0:
                 print(trainer.get_meter_data())
-                ori_img_ = inverse_normalize(at.tonumpy(img[0]))
-                gt_img = vis_bbox(ori_img_,
-                                    at.tonumpy(bbox_tmp[0]),
-                                    at.tonumpy(label_[0]))
-                plt.show()
+                try:
+                    ori_img_ = inverse_normalize(at.tonumpy(img[0]))
+                    gt_img = vis_bbox(ori_img_,
+                                        at.tonumpy(bbox_tmp[0]),
+                                        at.tonumpy(label_[0]))
+                    plt.show()
 
-                # plot predicti bboxes
-                _bboxes, _labels, _scores = trainer.faster_rcnn.predict([ori_img_], visualize=True)
-                pred_img = vis_bbox(ori_img_,
-                                    at.tonumpy(_bboxes[0]),
-                                    at.tonumpy(_labels[0]).reshape(-1),
-                                    at.tonumpy(_scores[0]))
-                plt.show()
-                
+                    # plot predicti bboxes
+                    _bboxes, _labels, _scores = trainer.faster_rcnn.predict([ori_img_], visualize=True)
+                    pred_img = vis_bbox(ori_img_,
+                                        at.tonumpy(_bboxes[0]),
+                                        at.tonumpy(_labels[0]).reshape(-1),
+                                        at.tonumpy(_scores[0]))
+                    plt.show()
+                except:
+                    print("Error in displaying images")
+                    
                 
         eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
