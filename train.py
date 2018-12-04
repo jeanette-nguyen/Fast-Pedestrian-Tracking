@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from utils.config import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
-from model import FasterRCNNVGG16
+from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from torch.utils import data as data_
 from trainer import FasterRCNNTrainer
 from utils import array_tool as at
@@ -62,8 +62,8 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for ii, (img, bbox_, label_, scale) in pbar:
             # Currently configured to predict (y_min, x_min, y_max, x_max)
-            bbox_tmp = bbox_.clone()
-            bbox_ = transform_bbox(bbox_)
+#             bbox_tmp = bbox_.clone()
+#             bbox_ = transform_bbox(bbox_)
             scale = at.scalar(scale)
             
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
@@ -80,7 +80,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 try:
                     ori_img_ = inverse_normalize(at.tonumpy(img[0]))
                     gt_img = vis_bbox(ori_img_,
-                                        at.tonumpy(bbox_tmp[0]),
+                                        at.tonumpy(bbox_[0]),
                                         at.tonumpy(label_[0]))
                     plt.show()
 
