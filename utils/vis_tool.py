@@ -11,13 +11,12 @@ from matplotlib import pyplot as plot
 # from data.voc_dataset import VOC_BBOX_LABEL_NAMES
 
 
-VOC_BBOX_LABEL_NAMES = (
+CALTECH_BBOX_LABEL_NAMES = (
     '0',
     'person',
     'people',
     'person-fa',
 )
-
 
 def vis_image(img, ax=None):
     """Visualize a color image.
@@ -70,7 +69,7 @@ def vis_bbox(img, bbox, label=None, score=None, ax=None):
         Returns the Axes object with the plot for further tweaking.
 
     """
-    label_names = list(VOC_BBOX_LABEL_NAMES) + ['bg']
+    label_names = list(CALTECH_BBOX_LABEL_NAMES) + ['bg']
     # add for index `-1`
     if label is not None and not len(bbox) == len(label):
         raise ValueError('The length of label must be same as that of bbox')

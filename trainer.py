@@ -9,7 +9,6 @@ from torch import nn
 import torch as t
 from utils import array_tool as at
 from utils.vis_tool import Visualizer
-
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
@@ -21,7 +20,7 @@ LossTuple = namedtuple('LossTuple',
                         'total_loss'
                         ])
 
-
+    
 class FasterRCNNTrainer(nn.Module):
     """wrapper for conveniently training. return losses
 
@@ -207,20 +206,39 @@ class FasterRCNNTrainer(nn.Module):
         t.save(save_dict, save_path)
         self.vis.save([self.vis.env])
         return save_path
-
-    def load(self, path, load_optimizer=True, parse_opt=False, ):
+    
+    def generate_state_dict(self, pre_trained, debug=False):
+        new = list(pre_trained.items())
+        curr_model_kvpair = self.faster_rcnn.state_dict()
+        if debug:
+            for k, v in curr_model_kvpair.items():
+                print("curr :", str(k))
+            for i in new:
+                print("new :", str(i[0]))
+        count = 0
+        for k, v in curr_model_kvpair.items():
+            if "mask" in k:
+                continue
+            layer_name, weights = new[count]
+            curr_model_kvpair[k] = weights
+            count += 1
+        return curr_model_kvpair
+    
+    def load(self, path, load_optimizer=False, parse_opt=False, debug=False, ):
         state_dict = t.load(path)
         if 'model' in state_dict:
-            self.faster_rcnn.load_state_dict(state_dict['model'])
-        else:  # legacy way, for backward compatibility
-            self.faster_rcnn.load_state_dict(state_dict)
+            sd = self.generate_state_dict(state_dict['model'], debug)
+            self.faster_rcnn.load_state_dict(sd)
+        else:
+            sd = self.generate_state_dict(state_dict, debug)
+            self.faster_rcnn.load_state_dict(sd)
             return self
         if parse_opt:
             opt._parse(state_dict['config'])
         if 'optimizer' in state_dict and load_optimizer:
             self.optimizer.load_state_dict(state_dict['optimizer'])
         return self
-
+        
     def update_meters(self, losses):
         loss_d = {k: at.scalar(v) for k, v in losses._asdict().items()}
         for key, meter in self.meters.items():
