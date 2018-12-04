@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
 import torch
-from PruningClasses import PruningModule, MaskedLinear, MaskedConvolution
+from model.compression.PruningClasses import PruningModule, MaskedLinear, MaskedConvolution
 
 class VGG(PruningModule):
     """

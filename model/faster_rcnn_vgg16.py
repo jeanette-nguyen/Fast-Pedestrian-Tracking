@@ -1,23 +1,25 @@
 from __future__ import  absolute_import
 import torch as t
 from torch import nn
-from torchvision.models import vgg16
+from torchvision.models import vgg16 as vgg16_torch
 from model.region_proposal_network import RegionProposalNetwork
 from model.faster_rcnn import FasterRCNN
 from model.roi_module import RoIPooling2D
 from utils import array_tool as at
 from utils.config import opt
+from model.compression.vgg16 import vgg16
 
-
-def decom_vgg16():
+def decom_vgg16(mask):
     # the 30th layer of features is relu of conv5_3
-    if opt.caffe_pretrain:
-        model = vgg16(pretrained=False)
-        if not opt.load_path:
-            model.load_state_dict(t.load(opt.caffe_pretrain_path))
+    if not mask:
+        if opt.caffe_pretrain:
+            model = vgg16_torch(pretrained=False)
+            if not opt.load_path:
+                model.load_state_dict(t.load(opt.caffe_pretrain_path))
+        else:
+            model = vgg16(not opt.load_path)
     else:
-        model = vgg16(not opt.load_path)
-
+        model = vgg16(pretrained=True, mask=True)
     features = list(model.features)[:30]
     classifier = model.classifier
 
@@ -57,10 +59,11 @@ class FasterRCNNVGG16(FasterRCNN):
     def __init__(self,
                  n_fg_class=20,
                  ratios=[0.5, 1, 2],
-                 anchor_scales=[8, 16, 32]
+                 anchor_scales=[8, 16, 32],
+                 mask=False
                  ):
                  
-        extractor, classifier = decom_vgg16()
+        extractor, classifier = decom_vgg16(mask)
 
         rpn = RegionProposalNetwork(
             512, 512,
