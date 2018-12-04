@@ -10,12 +10,11 @@ def quantize(model, bits=5, verbose=False):
         model: PyTorch model to pass in
         bits: number of bits to encode the weights
     """
-    mask = model.mask
     for sequential in model.children():
         for module in sequential:
             try:
                 dev = module.weight.device
-                weight = module.weight.data.cpu().numpy() * module.mask.data.cpu() if mask else module.weight.data.cpu()
+                weight = module.weight.data.cpu().numpy()
                 shape = weight.shape
                 print(f"Quantizing: {str(module)}")
                 print(shape)
