@@ -127,7 +127,8 @@ def main():
                                     pin_memory=True
                                     )
     print(f"TRAIN SET: {len(dataloader)} | TEST SET: {len(test_dataloader)}")
-    faster_rcnn = FasterRCNNVGG16()
+    print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
+    faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     best_map = 0
