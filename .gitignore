@@ -4,3 +4,7 @@ data/*.log
 core/*.pyc
 tools/*.pyc
 tests/*
+dataset/*
+checkpoints/*
+utils/*.pyc
+.ipynb_checkpoints/*
