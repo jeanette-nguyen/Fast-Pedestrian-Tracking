@@ -29,30 +29,6 @@ class PruningModule(Module):
                 module.prune(threshold=percentile_value)
 
     def prune_by_std(self, s=0.25, debug=False, batch_norm=False):
-        # if batch_norm:
-        #     nmodules = ['features.0', 'features.3', 'features.7',
-        #                 'features.10', 'features.14', 'features.17',
-        #                 'features.20', 'features.24', 'features.27', 
-        #                 'features.30', 'features.34', 'features.37',
-        #                 'features.40', 'classifier.0', 'classifier.3',
-        #                 'classifier.6']
-        # else:
-        #     nmodules = ['features.0', 'features.2', 'features.5', 
-        #                 'features.7', 'features.10', 'features.12', 
-        #                 'features.14', 'features.17', 'features.19', 
-        #                 'features.21', 'features.24', 'features.26', 
-        #                 'features.28', 'classifier.0', 'classifier.3',
-        #                 'classifier.6']
-        # for name, module in self.named_modules():
-        #     '''
-        #     Modules with weights are:
-        #         [features.0, features.2, features.5, features.7, features.10, features.12, features.14, 
-        #         features.17, features.19, features.21, features.24, features.26, features.28, classifier.0, classifier.3, classifier.6]
-        #     '''
-        #     if name in nmodules:
-        #         threshold = np.std(module.weight.data.cupy().numpy()) * s
-        #         print(f'Pruning with threshold : {threshold} for layer {name}')
-        #         module.prune(threshold)
         for i, (name, module) in enumerate(self.named_modules()):
             if 'Masked' in str(module) and 'Sequential' not in str(module):
                 if debug:
