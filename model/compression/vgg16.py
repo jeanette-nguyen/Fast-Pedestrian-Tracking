@@ -107,7 +107,8 @@ def check_not_val(k):
     
 
 def vgg16(pretrained=False, 
-          mask=False,
+          mask_lin=False,
+          mask_conv=False,
           in_channels=3,
           num_classes=1000,
           bias=True,
@@ -115,10 +116,10 @@ def vgg16(pretrained=False,
           **kwargs):
     features = make_layers(cfg['D'], 
                            in_channels=in_channels, 
-                           mask=mask, bias=bias)
+                           mask=mask_conv, bias=bias)
     if pretrained:
         kwargs['init_weights'] = False
-    if mask:
+    if mask_lin:
         kwargs['mask'] = True
     else:
         kwargs['mask'] = False
