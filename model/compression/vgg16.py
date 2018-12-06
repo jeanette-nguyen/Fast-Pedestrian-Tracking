@@ -16,6 +16,8 @@ class VGG(PruningModule):
     def __init__(self, features, num_classes=1000, init_weights=True, mask=False):
         super(VGG, self).__init__()
         self.mask = mask
+        if mask:
+            print("Using Masked Linear")
         linear = MaskedLinear if mask else nn.Linear
         self.features = features
         self.classifier = nn.Sequential(
@@ -107,18 +109,21 @@ def check_not_val(k):
     
 
 def vgg16(pretrained=False, 
-          mask=False,
+          mask_lin=False,
+          mask_conv=False,
           in_channels=3,
           num_classes=1000,
           bias=True,
           debug=False,
           **kwargs):
+    if mask_conv:
+        print("Using Masked Conv Layers")
     features = make_layers(cfg['D'], 
                            in_channels=in_channels, 
-                           mask=mask, bias=bias)
+                           mask=mask_conv, bias=bias)
     if pretrained:
         kwargs['init_weights'] = False
-    if mask:
+    if mask_lin:
         kwargs['mask'] = True
     else:
         kwargs['mask'] = False

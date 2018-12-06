@@ -8,7 +8,7 @@ from pprint import pprint
 class Config:
     # data
     mask_lin = True
-    mask_conv = False
+    mask_conv = True
     voc_data_dir = 'dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
@@ -18,7 +18,7 @@ class Config:
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
     roi_sigma = 1.
-    mask = False
+    mask = True
     # param for optimizer
     # 0.0005 in origin paper but 0.0001 in tf-faster-rcnn
     weight_decay = 0.0005

@@ -9,6 +9,7 @@ from torch import nn
 import torch as t
 from utils import array_tool as at
 from utils.vis_tool import Visualizer
+import pprint
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
