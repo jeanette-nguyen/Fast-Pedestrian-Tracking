@@ -99,7 +99,10 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
                                                         str(trainer.get_meter_data()))
-
+        print("Evaluation Results: ")
+        print(log_info)
+        print("\n\n")
+        
         if eval_result['map'] > best_map:
             best_map = eval_result['map']
             best_path = trainer.save(best_map=best_map)
