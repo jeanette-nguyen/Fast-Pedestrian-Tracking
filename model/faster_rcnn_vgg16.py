@@ -19,7 +19,7 @@ def decom_vgg16(mask):
         else:
             model = vgg16(not opt.load_path)
     else:
-        model = vgg16(pretrained=True)
+        model = vgg16(pretrained=True, mask_lin=opt.mask_lin, mask_conv=opt.mask_conv)
     features = list(model.features)[:30]
     classifier = model.classifier
 
