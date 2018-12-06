@@ -68,20 +68,23 @@ class MaskedLinear(Module):
         self.in_features = in_features
         self.out_features = out_features
         self.weight = Parameter(torch.Tensor(out_features, in_features))
-        # self.mask = Parameter(torch.ones([out_features, in_features]), requires_grad=False)
+        self.mask = Parameter(torch.ones([out_features, in_features]), requires_grad=False)
         if bias:
             self.bias = Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
         self.reset_params()
+
     def reset_params(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
     def forward(self, input):
-        return F.linear(input, self.weight, self.bias)
-        #return F.linear(input, self.weight * self.mask, self.bias)
+        if self.training:
+            return F.linear(input, self.weight * self.mask, self.bias)
+        else:
+            return F.linear(input, self.weight, self.bias)
     def __repr__(self):
         return self.__class__.__name__ + '(' \
             + 'in_features=' + str(self.in_features) \
@@ -89,13 +92,12 @@ class MaskedLinear(Module):
             + ', bias=' + str(self.bias is not None) + ')'
     def prune(self, threshold):
         weight_dev = self.weight.device
-        # mask_dev = self.mask.device
+        mask_dev = self.mask.device
         tensor = self.weight.data.cpu().numpy()
-        # mask = self.mask.data.cpu().numpy()
-        mask = np.ones_like(tensor)
+        mask = self.mask.data.cpu().numpy()
         new_mask = np.where(abs(tensor) < threshold, 0, mask)
         self.weight.data = torch.from_numpy(tensor * new_mask).to(weight_dev)
-        # self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
+        self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
 
 class MaskedConvolution(Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, stride=1, bias=False):
@@ -106,7 +108,7 @@ class MaskedConvolution(Module):
         self.stride = stride
         self.padding = padding
         self.weight = Parameter(torch.Tensor(out_channels, in_channels, kernel_size, kernel_size))
-        # self.mask = Parameter(torch.ones([out_channels, in_channels, kernel_size, kernel_size]), requires_grad=False)
+        self.mask = Parameter(torch.ones([out_channels, in_channels, kernel_size, kernel_size]), requires_grad=False)
         if bias:
             self.bias = Parameter(torch.Tensor(out_channels))
         else:
@@ -117,9 +119,12 @@ class MaskedConvolution(Module):
         self.weight.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
+
     def forward(self, input):
-        return F.conv2d(input, self.weight, self.bias, stride=self.stride, padding=self.padding)
-        # return F.conv2d(input, self.weight * self.mask, self.bias, stride=self.stride, padding=self.padding)
+        if self.training:
+            return F.conv2d(input, self.weight * self.mask, self.bias, stride=self.stride, padding=self.padding)
+        else:
+            return F.conv2d(input, self.weight, self.bias, stride=self.stride, padding=self.padding)
     def __repr__(self):
         return self.__class__.__name__ + '(' \
             + 'in_channel=' + str(self.in_channels) \
@@ -129,10 +134,9 @@ class MaskedConvolution(Module):
             + ', bias=' + str(self.bias is not None) + ')'
     def prune(self, threshold):
         weight_dev = self.weight.device
-        # mask_dev = self.mask.device
+        mask_dev = self.mask.device
         tensor = self.weight.data.cpu().numpy()
-        # mask = self.mask.data.cpu().numpy()
-        mask = np.ones_like(tensor)
+        mask = self.mask.data.cpu().numpy()
         new_mask = np.where(abs(tensor) < threshold, 0, mask)
         self.weight.data = torch.from_numpy(tensor * new_mask).to(weight_dev)
-        # self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
+        self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
