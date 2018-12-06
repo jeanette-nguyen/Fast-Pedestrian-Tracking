@@ -208,7 +208,7 @@ class FasterRCNNTrainer(nn.Module):
         self.vis.save([self.vis.env])
         return save_path
     
-    def generate_state_dict(self, pre_trained, debug=False):
+    def generate_state_dict(self, pre_trained, simple=False, debug=False):
         new = list(pre_trained.items())
         curr_model_kvpair = self.faster_rcnn.state_dict()
         if debug:
@@ -220,18 +220,22 @@ class FasterRCNNTrainer(nn.Module):
         for k, v in curr_model_kvpair.items():
             if "mask" in k:
                 continue
+            if not simple:
+                if "head.cls_loc" in str(k) or "head.score" in str(k):
+                    count += 1
+                    continue
             layer_name, weights = new[count]
             curr_model_kvpair[k] = weights
             count += 1
         return curr_model_kvpair
     
-    def load(self, path, load_optimizer=False, parse_opt=False, debug=False, ):
+    def load(self, path, load_optimizer=False, parse_opt=False, debug=False, simple=opt.use_simple,):
         state_dict = t.load(path)
         if 'model' in state_dict:
-            sd = self.generate_state_dict(state_dict['model'], debug)
+            sd = self.generate_state_dict(state_dict['model'], simple, debug)
             self.faster_rcnn.load_state_dict(sd)
         else:
-            sd = self.generate_state_dict(state_dict, debug)
+            sd = self.generate_state_dict(state_dict, simple, debug)
             self.faster_rcnn.load_state_dict(sd)
             return self
         if parse_opt:
