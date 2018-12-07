@@ -208,7 +208,7 @@ class FasterRCNNTrainer(nn.Module):
         self.vis.save([self.vis.env])
         return save_path
     
-    def generate_state_dict(self, pre_trained, simple=False, debug=False):
+    def generate_simple_state_dict(self, pre_trained, debug=False):
         new = list(pre_trained.items())
         curr_model_kvpair = self.faster_rcnn.state_dict()
         if debug:
@@ -220,13 +220,37 @@ class FasterRCNNTrainer(nn.Module):
         for k, v in curr_model_kvpair.items():
             if "mask" in k:
                 continue
-            if not simple:
-                if "head.cls_loc" in str(k) or "head.score" in str(k):
-                    count += 1
-                    continue
-            layer_name, weights = new[count]
+            if "head.cls_loc" in str(k) or "head.score" in str(k):
+                count += 1
+                continue
+            _, weights = new[count]
             curr_model_kvpair[k] = weights
             count += 1
+        return curr_model_kvpair
+    
+
+    def generate_state_dict(self, pre_trained, simple=False, debug=False):
+        if simple:
+            return self.generate_simple_state_dict(pre_trained, debug)
+        new = list(pre_trained.items())
+        curr_model_kvpair = self.faster_rcnn.state_dict()
+        if debug:
+            for k, v in curr_model_kvpair.items():
+                print("curr :", str(k))
+            for i in new:
+                print("new :", str(i[0]))
+        for k, v in new:
+            if k in curr_model_kvpair:
+                curr_model_kvpair[k] = v
+            else:
+                print(f"Key Weight Mistmatch at: {str(k)} -- Not Loading")
+        # count = 0
+        # for k, v in curr_model_kvpair.items():
+        #     if "mask" in k:
+        #         continue
+        #     layer_name, weights = new[count]
+        #     curr_model_kvpair[k] = weights
+        #     count += 1
         return curr_model_kvpair
     
     def load(self, path, load_optimizer=False, parse_opt=False, debug=False, simple=opt.use_simple,):
