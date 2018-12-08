@@ -122,7 +122,7 @@ def main():
                                 shuffle=True, \
                                 # pin_memory=True,
                                 num_workers=opt.num_workers)
-    testset = TestDataset(opt, split='val')
+    testset = TestDataset(opt, split='test')
     test_dataloader = data_.DataLoader(testset,
                                     batch_size=1,
                                     num_workers=opt.test_num_workers,
