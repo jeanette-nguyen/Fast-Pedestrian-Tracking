@@ -11,6 +11,7 @@ from utils.config import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from torch.utils import data as data_
+import torch
 from trainer import FasterRCNNTrainer
 from utils import array_tool as at
 from utils.vis_tool import vis_bbox
