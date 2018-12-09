@@ -97,17 +97,6 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 
         eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        
-        if opt.load_path:
-            assert os.path.isfile(opt.load_path), 'Checkpoint {} does not exist.'.format(opt.load_path)
-            checkpoint = torch.load(opt.load_path)['other_info']
-            #start_epoch = checkpoint['epoch']
-            best_map = checkpoint['best_map']
-            trainer.load(opt.load_path)
-            print("="*30+"   Checkpoint   "+"="*30)
-            print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, 1)) #no saved epoch for now, put in 1 to test
-    
-    
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
                                                         str(trainer.get_meter_data()))
         print("Evaluation Results: ")
@@ -147,6 +136,17 @@ def main():
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     best_map = 0
     lr_ = opt.lr
+    
+    if opt.load_path:
+        assert os.path.isfile(opt.load_path), 'Checkpoint {} does not exist.'.format(opt.load_path)
+        checkpoint = torch.load(opt.load_path)['other_info']
+        #start_epoch = checkpoint['epoch']
+        best_map = checkpoint['best_map']
+        trainer.load(opt.load_path)
+        print("="*30+"   Checkpoint   "+"="*30)
+        print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, 1)) #no saved epoch, put in 1 for now
+    
+    
     train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
 
 
