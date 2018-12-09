@@ -10,6 +10,8 @@ class Config:
     mask_lin = True
     mask_conv = True
     voc_data_dir = 'dataset'
+    train_set_id = None
+    test_set_id = 'set06'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 8
@@ -28,8 +30,8 @@ class Config:
 
 
     # visualization
-    env = 'faster-rcnn'  # visdom env
-    port = 8097
+    env = 'faster_rcnn_allsets'  # visdom env
+    port = 8008
     plot_every = 40  # vis every N iter
 
     # preset
@@ -40,7 +42,7 @@ class Config:
     epoch = 14
 
 
-    use_adam = False # Use Adam optimizer
+    use_adam = True # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
     # debug
@@ -50,7 +52,7 @@ class Config:
     # model
     load_path = None
 
-    caffe_pretrain = False # use caffe pretrained model instead of torchvision
+    caffe_pretrain = True # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
 
     def _parse(self, kwargs):

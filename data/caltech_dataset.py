@@ -17,12 +17,14 @@ CLS_IDX = {'person': 0, 'people':1, 'person?':2, 'person-fa':0}
 class CaltechBboxDataset:
     """Bounding box dataset for Caltech Pedestrian"""
 
-    def __init__(self, data_dir, split=TRAIN, set_id='set00'):
+    def __init__(self, data_dir, split=TRAIN, set_id=None):
         self.split = split
         csv_file = os.path.join(data_dir, 'data_{}.csv'.format(self.split))
         data = pd.read_csv(csv_file)
-        data = data[data[Col.SET] == set_id]
+        if set_id:
+            data = data[data[Col.SET] == set_id]
         self.data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+        self.label_names = tuple(CLS_IDX.keys())
 
     def __len__(self):
         return len(self.data)

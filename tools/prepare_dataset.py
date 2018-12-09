@@ -202,6 +202,7 @@ class DatasetGenerator(object):
         coord = []
         lbl = []
         n_lbls = []
+        background_label = 'background'
         for idx, row in self.dataset_df.iterrows():
             data = self.annotations[row[Col.SET]][row[Col.VIDEO]][
                 Col.FRAME + 's']
@@ -215,7 +216,7 @@ class DatasetGenerator(object):
             else:
                 n_lbls.append(0)
                 coord.append(np.nan)
-                lbl.append(np.nan)
+                lbl.append([background_label])
         self.dataset_df[Col.COORD] = coord
         self.dataset_df[Col.LABEL] = lbl
         self.dataset_df[Col.N_LABELS] = n_lbls
@@ -253,7 +254,7 @@ class DatasetGenerator(object):
 
     def _convert_nans(self):
         """Fill NaN values"""
-        self.dataset_df = self.dataset_df.fillna(value='[[0, 0, 0, 0]]')
+        self.dataset_df[Col.COORD] = self.dataset_df[Col.COORD].fillna(value='[[0, 0, 0, 0]]')
         self.logger.info('Total annotations: {}'.
                          format(self.dataset_df[Col.N_LABELS].sum()))
         self.logger.info('Dataset size: {}'.format(self.dataset_df.shape))

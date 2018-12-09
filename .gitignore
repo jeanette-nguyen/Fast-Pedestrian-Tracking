@@ -8,3 +8,7 @@ dataset/*
 checkpoints/*
 utils/*.pyc
 .ipynb_checkpoints/*
+.nfs000000001b69d49c00000363
+nohup.out
+tools/.ipynb_checkpoints/
+visdom.out

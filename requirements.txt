@@ -7,4 +7,5 @@ pprint
 matplotlib
 ipdb
 cython
+pandas
 git+https://github.com/pytorch/tnt.git@master
