@@ -321,7 +321,7 @@ class FasterRCNN(nn.Module):
         """
         Call this function only after pruning and retraining after pruning
         """
-        for i, (name, module) in enumerate(self.named_modules()):
+        for i, (name, m) in enumerate(self.named_modules()):
             if name and "Masked" in str(module) and "Sequential" not in str(module):
                 w_dev = m.weight.device
                 mask_dev = m.mask.device
