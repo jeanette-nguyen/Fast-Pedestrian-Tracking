@@ -52,7 +52,10 @@ class Config:
 
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
-
+    # Pruning Params
+    prune_by_std = True
+    std_sensitivity = 3.5
+    percentile_sensitivity = 5
     def _parse(self, kwargs):
         state_dict = self._state_dict()
         for k, v in kwargs.items():

@@ -172,7 +172,7 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses
 
-    def save(self, save_optimizer=False, save_path=None, **kwargs):
+    def save(self, save_optimizer=False, save_path=None, prune=False, **kwargs):
         """serialize models include optimizer and other info
         return path where the model-file is stored.
 
@@ -199,6 +199,9 @@ class FasterRCNNTrainer(nn.Module):
             save_path = 'checkpoints/fasterrcnn_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
+
+        if prune:
+            save_path += "_pruned"
 
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
