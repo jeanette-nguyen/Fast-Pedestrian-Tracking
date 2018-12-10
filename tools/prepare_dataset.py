@@ -29,7 +29,7 @@ from core.logger import Logger
 from utils.constants import *
 
 # Module level constants
-DEBUG = True
+DEBUG = False
 
 
 def parse_cmds():
