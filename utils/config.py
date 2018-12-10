@@ -8,7 +8,7 @@ from pprint import pprint
 class Config:
     # data
     mask_lin = True
-    mask_conv = True
+    mask_conv = False
     voc_data_dir = 'dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize

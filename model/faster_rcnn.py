@@ -302,7 +302,7 @@ class FasterRCNN(nn.Module):
             alive = tensor[np.nonzero(tensor)]
             al_parameters.append(alive)
         all_alive = np.concatenate(al_parameters)
-        percentile_value = np.percentile(abs(all_alive, q))
+        percentile_value = np.percentile(abs(all_alive), q)
         print(f"Pruning with Threshold: {percentile_value}")
         for i, (name, module) in enumerate(self.named_modules()):
             if "Masked" in str(module) and name and "Sequential" not in str(module):
@@ -322,10 +322,9 @@ class FasterRCNN(nn.Module):
         Call this function only after pruning and retraining after pruning
         """
         for i, (name, m) in enumerate(self.named_modules()):
-            if name and "Masked" in str(module) and "Sequential" not in str(module):
+            if name and "Masked" in str(m) and "Sequential" not in str(m):
                 w_dev = m.weight.device
-                mask_dev = m.mask.device
                 tensor = m.weight.data.cpu().numpy()
                 mask = m.mask.data.cpu().numpy()
-                m.weight.data = torch.from_numpy(tensor * mask).to(w_dev)
+                m.weight.data = t.from_numpy(tensor * mask).to(w_dev)
 
