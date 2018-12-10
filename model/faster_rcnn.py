@@ -6,6 +6,7 @@ import cupy as cp
 from utils import array_tool as at
 from model.utils.bbox_tools import loc2bbox
 from model.utils.nms import non_maximum_suppression
+import numpy as np
 
 from torch import nn
 from data.dataset import preprocess
@@ -292,6 +293,39 @@ class FasterRCNN(nn.Module):
             param_group['lr'] *= decay
         return self.optimizer
 
+    def prune_by_percentile(self, q=5.0, **kwargs):
+        al_parameters = []
+        for name, p in self.named_parameters():
+            if 'bias' in name or 'mask' in name:
+                continue
+            tensor = p.data.cpu().numpy()
+            alive = tensor[np.nonzero(tensor)]
+            al_parameters.append(alive)
+        all_alive = np.concatenate(al_parameters)
+        percentile_value = np.percentile(abs(all_alive, q))
+        print(f"Pruning with Threshold: {percentile_value}")
+        for i, (name, module) in enumerate(self.named_modules()):
+            if "Masked" in str(module) and name and "Sequential" not in str(module):
+                module.prune(threshold=percentile_value)
 
-
+    def prune_by_std(self, s=0.25, debug=False):
+        for i, (name, module) in enumerate(self.named_modules()):
+            if name and "MaskedLinear" in str(module) and "Sequential" not in str(module):
+                if debug:
+                    print("Pruning : ", str(name))
+                threshold = np.std(module.weight.data.cpu().numpy()) * s
+                print(f"Pruning with threshold : {threshold} for layer{name}")
+                module.prune(threshold)
+                
+    def set_pruned(self):
+        """
+        Call this function only after pruning and retraining after pruning
+        """
+        for i, (name, module) in enumerate(self.named_modules()):
+            if name and "Masked" in str(module) and "Sequential" not in str(module):
+                w_dev = m.weight.device
+                mask_dev = m.mask.device
+                tensor = m.weight.data.cpu().numpy()
+                mask = m.mask.data.cpu().numpy()
+                m.weight.data = torch.from_numpy(tensor * mask).to(w_dev)
 
