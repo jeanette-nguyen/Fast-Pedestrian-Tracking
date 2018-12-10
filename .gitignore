@@ -8,3 +8,4 @@ dataset/*
 checkpoints/*
 utils/*.pyc
 .ipynb_checkpoints/*
+./demo_test_thomas.ipynb
