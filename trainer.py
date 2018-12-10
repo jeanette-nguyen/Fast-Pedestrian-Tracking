@@ -12,6 +12,8 @@ from utils.vis_tool import Visualizer
 import pprint
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
+from scipy.sparse import coo_matrix
+
 
 LossTuple = namedtuple('LossTuple',
                        ['rpn_loc_loss',
@@ -61,6 +63,7 @@ class FasterRCNNTrainer(nn.Module):
         self.rpn_cm = ConfusionMeter(2)
         self.roi_cm = ConfusionMeter(4)#ConfusionMeter(21)
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}  # average loss
+        self.sparse = False
 
     def forward(self, imgs, bboxes, labels, scale):
         """Forward Faster R-CNN and calculate losses.
@@ -185,12 +188,21 @@ class FasterRCNNTrainer(nn.Module):
             save_path(str): the path to save models.
         """
         save_dict = dict()
+        save_dict['sparse_list'] = []
+        if self.sparse:
+            for n, m in self.faster_rcnn.named_modules():
+                if n and "Masked" in str(m):
+                    if m.sparse:
+                        w_dev = m.weight.device
+                        w = m.weight.data.cpu().to_dense()
+                        m.weight.data = w.to(w_dev)
+                        save_dict['sparse_list'].append(n)
 
         save_dict['model'] = self.faster_rcnn.state_dict()
         save_dict['config'] = opt._state_dict()
         save_dict['other_info'] = kwargs
         save_dict['vis_info'] = self.vis.state_dict()
-
+        save_dict['sparse'] = self.sparse
         if save_optimizer:
             save_dict['optimizer'] = self.optimizer.state_dict()
 
@@ -244,15 +256,32 @@ class FasterRCNNTrainer(nn.Module):
                 curr_model_kvpair[k] = v
             else:
                 print(f"Key Weight Mistmatch at: {str(k)} -- Not Loading")
-        # count = 0
-        # for k, v in curr_model_kvpair.items():
-        #     if "mask" in k:
-        #         continue
-        #     layer_name, weights = new[count]
-        #     curr_model_kvpair[k] = weights
-        #     count += 1
         return curr_model_kvpair
-    
+
+    def to_sparse(self, sparse_mx):
+        print("Turning Sparse")
+        sparse_mx = sparse_mx.tocoo().astype(np.float32)
+        indices = torch.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col))).long()
+        values = torch.from_numpy(sparse_mx.data)
+        shape = torch.Size(sparse_mx.shape)
+        return torch.sparse.FloatTensor(indices, values, shape)
+
+    def revert_to_sparse(self, sparse_list):
+        self.sparse = True
+        for n, m in self.faster_rcnn.named_modules():
+            if n in sparse_list and "MaskedLinear" in str(m):
+                try:
+                    m.sparse = True
+                    dev = m.weight.device
+                    weight = module.weight.data.cpu().numpy()
+                    matrix = coo_matrix(weight)
+                    tensor = self.to_sparse(matrix)
+                    m.weight.data = tensor.to(dev)
+                raise ValueError:
+                    print(f"Couldn't convert {n},{str(m)} to sparse")
+
+        return self
+
     def load(self, path, load_optimizer=False, parse_opt=False, debug=False, simple=opt.use_simple,):
         state_dict = t.load(path)
         if 'model' in state_dict:
@@ -266,6 +295,8 @@ class FasterRCNNTrainer(nn.Module):
             opt._parse(state_dict['config'])
         if 'optimizer' in state_dict and load_optimizer:
             self.optimizer.load_state_dict(state_dict['optimizer'])
+        if 'sparse' in state_dict and state_dict['sparse'] == True:
+            self.revert_to_sparse(self, state_dict['sparse_list'])
         return self
         
     def update_meters(self, losses):

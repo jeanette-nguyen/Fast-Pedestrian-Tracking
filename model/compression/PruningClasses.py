@@ -24,8 +24,10 @@ class PruningModule(Module):
         all_alive = np.concatenate(al_parameters)
         percentile_value = np.percentile(abs(all_alive), q)
         print(f"Pruning with Threshold: {percentile_value}")
-        for name, module in self.named_modules():
-            if name in ['fc1', 'fc2', 'fc3']:
+        for i, (name, module) in enumerate(self.named_modules()):
+            if 'Masked' in str(module) and 'Sequential' not in str(module):
+                if debug:
+                    print("Pruning : ", str(name))
                 module.prune(threshold=percentile_value)
 
     def prune_by_std(self, s=0.25, debug=False, batch_norm=False):
@@ -73,6 +75,7 @@ class MaskedLinear(Module):
             self.bias = Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
+        self.sparse = False
         self.reset_params()
 
     def reset_params(self):
@@ -84,7 +87,10 @@ class MaskedLinear(Module):
         if self.training:
             return F.linear(input, self.weight * self.mask, self.bias)
         else:
-            return F.linear(input, self.weight, self.bias)
+            if self.sparse:
+                return torch.mm(self.weight.data, input) + self.bias.view(self.weight.size(0), -1)
+            else:
+                return F.linear(input, self.weight, self.bias)
     def __repr__(self):
         return self.__class__.__name__ + '(' \
             + 'in_features=' + str(self.in_features) \
