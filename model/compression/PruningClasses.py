@@ -8,7 +8,7 @@ import torch
 from torch.nn import Parameter
 from torch.nn.modules.module import Module
 from torch.nn.modules.linear import Linear
-
+from scipy.sparse import coo_matrix
 
 class PruningModule(Module):
     def prune_by_percentile(self, q=5.0, **kwargs):
@@ -174,18 +174,14 @@ class SparseDenseLinear(Linear):
             + ', bias=' + str(self.bias is not None) + ')'
             
     def _convert_to_dense(self):
-        if str(torch.__version__) <= "0.4.1":
-            if hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
-                self.weight.data = self.weight.coalesce().to_dense()
+        if self.weight.is_sparse:
+            self.weight.data = self.weight.data.coalesce().to_dense()
         else:
-            if hasattr(self.weight, 'values') and hasattr(self.weight, 'indices'):
-                self.weight.data = self.weight.coalesce().to_dense()
+            print(f"{self.__repr__}: Weight already dense")
                
     def _convert_to_sparse(self):
-        if str(torch.__version__) <= "0.4.1" and hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
-            print("Weight already sparse")
-        elif str(torch.__version__) >= "1.0.0" and hasattr(self.weight, "indicies") and hasattr(self.weight, "values"):
-            print("Weight already sparse")
+        if self.weight.is_sparse:
+            print(f"{self.__repr__}: Weight already sparse")
         else:
             dev = self.weight.device
             w = self.weight.data.cpu().numpy()
@@ -197,10 +193,16 @@ class SparseDenseLinear(Linear):
             self.weight.data = torch.sparse.FloatTensor(ind, vals, sh).to(dev)
     
     def check_sparsity(self):
-        if self.sparse == True and not hasattr(self.weight, '_values') and not hasattr(self.weight, '_indices'):
-            self._convert_to_sparse()
-        elif self.sparse == False and hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
-            self._convert_to_dense()
+        if self.sparse:
+            if self.weight.is_sparse:
+                return
+            else:
+                self._convert_to_sparse()
+        else:
+            if not self.weight.is_sparse:
+                return
+            else:
+                self._convert_to_dense()
     
     def forward(self, input):
         if self.sparse:

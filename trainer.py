@@ -289,18 +289,17 @@ class FasterRCNNTrainer(nn.Module):
     def revert_to_sparse(self, sparse_list):
         self.sparse = True
         for n, m in self.named_modules():
-            if str(m) in sparse_list and hasattr(m, 'sparse'):
-                try:
-                    m.sparse = True
-                    if hasattr(m, 'weight'):
+            if str(m) in sparse_list:
+                m.sparse = True
+                if hasattr(m, 'weight') and not m.weight.is_sparse:
+                    try:
                         dev = m.weight.device
                         weight = m.weight.data.cpu().numpy()
                         matrix = coo_matrix(weight)
                         tensor = self.to_sparse(matrix, n, str(m))
                         m.weight.data = tensor.to(dev)
-                except:
-                    raise ValueError(f"Couldn't convert {n},{str(m)} to sparse")
-
+                    except:
+                        raise ValueError(f"Couldn't convert {n},{str(m)} to sparse")
         return self
 
     def load(self, path, load_optimizer=False, parse_opt=False, debug=False, simple=opt.use_simple,):

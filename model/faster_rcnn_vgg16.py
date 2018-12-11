@@ -11,15 +11,7 @@ from model.compression.vgg16 import vgg16
 
 def decom_vgg16(mask):
     # the 30th layer of features is relu of conv5_3
-    if not mask:
-        if opt.caffe_pretrain:
-            model = vgg16_torch(pretrained=False)
-            if not opt.load_path:
-                model.load_state_dict(t.load(opt.caffe_pretrain_path))
-        else:
-            model = vgg16(not opt.load_path)
-    else:
-        model = vgg16(pretrained=True, mask_lin=opt.mask_lin, mask_conv=opt.mask_conv)
+    model = vgg16(pretrained=True, mask_lin=opt.mask_lin, mask_conv=opt.mask_conv)
     features = list(model.features)[:30]
     classifier = model.classifier
 

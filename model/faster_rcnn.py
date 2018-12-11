@@ -340,15 +340,16 @@ class FasterRCNN(nn.Module):
 
     def set_sparse(self):
         self.sparse = True
-        for m in self.named_modules():
+        for n, m in self.named_modules():
             if hasattr(m, "sparse"):
                 m.sparse = True
 
     def set_dense(self):
         self.sparse = False
-        for m in self.named_modules():
+        for n, m in self.named_modules():
             if hasattr(m, "sparse"):
                 m.sparse = False
+
 
 
 
