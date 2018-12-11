@@ -13,6 +13,8 @@ import pprint
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 from scipy.sparse import coo_matrix
+from model.compression import quantization
+import numpy as np
 
 
 LossTuple = namedtuple('LossTuple',
@@ -167,10 +169,19 @@ class FasterRCNNTrainer(nn.Module):
 
         return LossTuple(*losses)
 
-    def train_step(self, imgs, bboxes, labels, scale):
+    def train_step(self, imgs, bboxes, labels, scale, prune_train=False):
         self.optimizer.zero_grad()
         losses = self.forward(imgs, bboxes, labels, scale)
         losses.total_loss.backward()
+        if prune_train:
+            for name, p in model.named_parameters():
+                if "mask" in name:
+                    continue
+                dev = p.device
+                tensor = p.data.cpu().numpy()
+                grad_tensor = p.grad.data.cpu().numpy()
+                grad_tensor = np.where(tensor==0, 0, grad_tensor)
+                p.grad.data = torch.from_numpy(grad_tensor).to(dev)
         self.optimizer.step()
         self.update_meters(losses)
         return losses
@@ -190,13 +201,13 @@ class FasterRCNNTrainer(nn.Module):
         save_dict = dict()
         save_dict['sparse_list'] = []
         if self.sparse:
-            for n, m in self.faster_rcnn.named_modules():
-                if n and "Masked" in str(m):
-                    if m.sparse:
+            for n, m in self.named_modules():
+                if hasattr(m, "sparse"):
+                    if m.sparse and hasattr(m, 'weight'):
                         w_dev = m.weight.device
-                        w = m.weight.data.cpu().to_dense()
+                        w = m.weight.data.coalesce().to_dense()
                         m.weight.data = w.to(w_dev)
-                        save_dict['sparse_list'].append(n)
+                    save_dict['sparse_list'].append(str(m))
 
         save_dict['model'] = self.faster_rcnn.state_dict()
         save_dict['config'] = opt._state_dict()
@@ -255,30 +266,31 @@ class FasterRCNNTrainer(nn.Module):
             if k in curr_model_kvpair:
                 curr_model_kvpair[k] = v
             else:
-                print(f"Key Weight Mistmatch at: {str(k)} -- Not Loading")
+                print(f"Key Weight Mismatch at: {str(k)} -- Not Loading")
         return curr_model_kvpair
 
-    def to_sparse(self, sparse_mx):
-        print("Turning Sparse")
+    def to_sparse(self, sparse_mx, n, m):
+        print(f"Turning Sparse: {n}: {m}")
         sparse_mx = sparse_mx.tocoo().astype(np.float32)
-        indices = torch.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col))).long()
-        values = torch.from_numpy(sparse_mx.data)
-        shape = torch.Size(sparse_mx.shape)
-        return torch.sparse.FloatTensor(indices, values, shape)
+        indices = t.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col))).long()
+        values = t.from_numpy(sparse_mx.data)
+        shape = t.Size(sparse_mx.shape)
+        return t.sparse.FloatTensor(indices, values, shape)
 
     def revert_to_sparse(self, sparse_list):
         self.sparse = True
-        for n, m in self.faster_rcnn.named_modules():
-            if n in sparse_list and "MaskedLinear" in str(m):
+        for n, m in self.named_modules():
+            if str(m) in sparse_list and hasattr(m, 'sparse'):
                 try:
                     m.sparse = True
-                    dev = m.weight.device
-                    weight = module.weight.data.cpu().numpy()
-                    matrix = coo_matrix(weight)
-                    tensor = self.to_sparse(matrix)
-                    m.weight.data = tensor.to(dev)
-                raise ValueError:
-                    print(f"Couldn't convert {n},{str(m)} to sparse")
+                    if hasattr(m, 'weight'):
+                        dev = m.weight.device
+                        weight = m.weight.data.cpu().numpy()
+                        matrix = coo_matrix(weight)
+                        tensor = self.to_sparse(matrix, n, str(m))
+                        m.weight.data = tensor.to(dev)
+                except:
+                    raise ValueError(f"Couldn't convert {n},{str(m)} to sparse")
 
         return self
 
@@ -296,7 +308,9 @@ class FasterRCNNTrainer(nn.Module):
         if 'optimizer' in state_dict and load_optimizer:
             self.optimizer.load_state_dict(state_dict['optimizer'])
         if 'sparse' in state_dict and state_dict['sparse'] == True:
-            self.revert_to_sparse(self, state_dict['sparse_list'])
+            print("Reverting to Sparse")
+            self.revert_to_sparse(state_dict['sparse_list'])
+        print(f"Successfully Loaded Model: {path}")
         return self
         
     def update_meters(self, losses):
@@ -312,6 +326,10 @@ class FasterRCNNTrainer(nn.Module):
 
     def get_meter_data(self):
         return {k: v.value()[0] for k, v in self.meters.items()}
+
+    def quantize(self, bits=5, verbose=False):
+        self.sparse = True
+        self.faster_rcnn = quantization.quantize(self.faster_rcnn, bits=bits, verbose=verbose)
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
@@ -334,3 +352,4 @@ def _fast_rcnn_loc_loss(pred_loc, gt_loc, gt_label, sigma):
     # Normalize by total number of negtive and positive rois.
     loc_loss /= ((gt_label >= 0).sum().float()) # ignore gt_label==-1 for rpn_loss
     return loc_loss
+

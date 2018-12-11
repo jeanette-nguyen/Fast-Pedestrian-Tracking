@@ -22,7 +22,9 @@ def print_nonzeros_mask(model):
             nonzero += nnz
             total_params = np.prod(tensor.shape)
             total += total_params
-            print(f"{name:20} | nonzeros = {nnz:7} / {total_params:7} ({100. * nnz / total_params:6.2f}%) | total_pruned = {total_params - nnz : 7} | shape = {tensor.shape}")
+            print(f"""{name:20} | nonzeros = {nnz:7} / {total_params:7} """
+                  f"""({100. * nnz / total_params:6.2f}%) | total_pruned = """
+                  f"""{total_params - nnz : 7} | shape = {tensor.shape}""")
         else:
             continue
     print(f"Active: {nonzero}/{total}, pruned : {total - nonzero} ({100. * (total - nonzero)/total : 6.2f}%)")
@@ -42,8 +44,8 @@ def print_nonzeros(model, only_pruned=False):
                     total += total_params
                     if "Mask" in str(module) and modname and "Sequential" not in str(module):
                         print(f"""{name:20} | nonzeros = {nonzero_count:7} / {total_params:7} """
-                                f"""({100. * nonzero_count / total_params:6.2f}%)"""
-                                f""" | total_pruned = {total_params - nonzero_count : 7} | shape = {tensor.shape}""")
+                              f"""({100. * nonzero_count / total_params:6.2f}%)"""
+                              f""" | total_pruned = {total_params - nonzero_count : 7} | shape = {tensor.shape}""")
         print(f"Active: {nonzero}, pruned : {total - nonzero}, total: {total}, Compressed: {100. * nonzero / total:6.2f}%")
     else:
         for name, param in model.named_parameters():
@@ -54,7 +56,11 @@ def print_nonzeros(model, only_pruned=False):
             total_params = np.prod(tensor.shape)
             nonzero += nonzero_count
             total += total_params
-            print(f"{name:20} | nonzeros = {nonzero_count:7} / {total_params:7} ({100. * nonzero_count / total_params:6.2f}%) | total_pruned = {total_params - nonzero_count : 7} | shape = {tensor.shape}")
-        print(f"Active: {nonzero}, pruned : {total - nonzero}, total: {total}, Compressed: {100. * nonzero / total:6.2f}%")
+            print(f"""{name:20} | nonzeros = {nonzero_count:7} / {total_params:7}"""
+                  f""" ({100. * nonzero_count / total_params:6.2f}%) | """
+                  f"""total_pruned = {total_params - nonzero_count : 7} |"""
+                  f""" shape = {tensor.shape}""")
+        print(f"""Active: {nonzero}, pruned : {total - nonzero}, total: {total},"""
+              f""" Compressed: {100. * nonzero / total:6.2f}%""")
 
                 

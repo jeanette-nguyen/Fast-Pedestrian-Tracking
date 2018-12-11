@@ -18,48 +18,31 @@ def quantize(model, bits=5, verbose=False):
         model: PyTorch model to pass in
         bits: number of bits to encode the weights
     """
+    print("\n=====!![NOTE]: Only support for quantization of linear layers supported=====\n")
+    model.sparse = True
     for sequential in model.children():
-        for module in sequential:
-            try:
-                dev = module.weight.device
-                weight = module.weight.data.cpu().numpy()
-                shape = weight.shape
-                print(f"Quantizing: {str(module)}")
-                print(shape)
-                if len(shape) == 2:
-                    matrix = coo_matrix(weight)
-                    mmin = min(matrix.data)
-                    mmax = max(matrix.data)
-                    space = np.linspace(mmin, mmax, num=2**bits)
-                    kmeans = KMeans(n_clusters=len(space), init=space.reshape(-1, 1), n_init=1, precompute_distances=True, algorithm="full")
-                    kmeans.fit(matrix.data.reshape(-1, 1))
-                    new_weights = kmeans.cluster_centers_[kmeans.labels_].reshape(-1)
-                    matrix.data = new_weights
-                    tensor = sparse_mx_to_tensor(matrix)
-                    module.weight.data = tensor.to(dev)
-                    # module.weight.data = torch.from_numpy(matrix.toarray()).to(dev)
-                else:
-                    assert len(shape) == 4, "must be 2 or 4 for FC layers or convolution filters"
-                    for out_c in range(shape[0]):
-                        for in_c in range(shape[1]):
-                            k = weight[out_c, in_c, :, :]
-                            try:
-                                matrix = csc_matrix(k)
-                                mmin = min(matrix.data)
-                                mmax = max(matrix.data)
-                                space = np.linspace(mmin, mmax, num=2**bits)
-                                reshaped_data = matrix.data.reshape(-1, 1)
-                                clusters = min(len(space), len(reshaped_data))
-                                kmeans = KMeans(n_clusters=clusters, init='k-means++', n_init=1, precompute_distances=True, algorithm="full")
-                                kmeans.fit(matrix.data.reshape(-1, 1))
-                                new_weights = kmeans.cluster_centers_[kmeans.labels_].reshape(-1)
-                                matrix.data = new_weights
-                                module.weight[out_c, in_c].data = torch.from_numpy(matrix.toarray()).to(dev)
-                            except:
-                                if verbose:
-                                    print("No weights in {}{} of {}".format(out_c, in_c, str(module)))
-                print("Done quantizingg {}".format(str(module)))
-            except:
-                if verbose:
-                    print("No weights in module {}".format(str(module)))
-                
+        if "maskedlinear" in str(sequential).lower():
+            for name, module in sequential.named_modules():
+                if name and "Sequential" not in str(module) and "masked" in str(module).lower():
+                    dev = module.weight.device
+                    weight = module.weight.data.cpu().numpy()
+                    shape = weight.shape
+                    print(f"Trying to quantize: {str(module)} of size: {shape} ({shape[0]*shape[1]} parameters)")
+                    try:
+                        if len(shape) == 2:
+                            matrix = coo_matrix(weight)
+                            mmin = min(matrix.data)
+                            mmax = max(matrix.data)
+                            space = np.linspace(mmin, mmax, num=2**bits)
+                            kmeans = KMeans(n_clusters=len(space), init=space.reshape(-1, 1), n_init=1, precompute_distances=True, algorithm="full")
+                            kmeans.fit(matrix.data.reshape(-1, 1))
+                            new_weights = kmeans.cluster_centers_[kmeans.labels_].reshape(-1)
+                            matrix.data = new_weights
+                            tensor = sparse_mx_to_tensor(matrix)
+                            module.weight.data = tensor.to(dev)
+                        module.sparse = True
+                        print("Done quantizing {}".format(str(module)))
+                    except:
+                        if verbose:
+                            print("No weights or mask in module {}".format(str(module)))
+    return model
