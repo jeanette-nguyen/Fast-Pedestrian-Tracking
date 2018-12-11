@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch.nn import Parameter
 from torch.nn.modules.module import Module
+from torch.nn.modules.linear import Linear
+
 
 class PruningModule(Module):
     def prune_by_percentile(self, q=5.0, **kwargs):
@@ -85,7 +87,7 @@ class MaskedLinear(Module):
             self.bias.data.uniform_(-stdv, stdv)
     def forward(self, input):
         if self.training:
-            return F.linear(input, self.weight * self.mask, self.bias)
+            return F.linear(input, self.weight * self.mask, self.bias) if self.mask else F.linear(input, self.weight, self.bias)
         else:
             if self.sparse:
                 return torch.mm(self.weight.data, input) + self.bias.view(self.weight.size(0), -1)
@@ -146,3 +148,68 @@ class MaskedConvolution(Module):
         new_mask = np.where(abs(tensor) < threshold, 0, mask)
         self.weight.data = torch.from_numpy(tensor * new_mask).to(weight_dev)
         self.mask.data = torch.from_numpy(new_mask).to(mask_dev)
+
+class SparseDenseLinear(Linear):
+    def __init__(self, in_features=None, out_features=None, bias=True, Masked=None):
+        if Masked is not None:
+            b = True if Masked.bias is not None else None
+            super(SparseDenseLinear, self).__init__(Masked.in_features,
+                                                   Masked.out_features,
+                                                   bias=b)
+            self._sparse = Masked.sparse
+            self.weight = Masked.weight
+            self.bias = Masked.bias
+        else:
+            assert in_features is not None and out_features is not None, "Specify in_features and out_feautres if no MaskedLinear to initialize"
+            super(SparseDenseLinear, self).__init__(in_features, out_features, bias=bias)
+            self._sparse = False
+            
+
+    def _convert_to_dense(self):
+        if str(torch.__version__) <= "0.4.1":
+            if hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
+                self.weight.data = self.weight.coalesce().to_dense()
+        else:
+            if hasattr(self.weight, 'values') and hasattr(self.weight, 'indices'):
+                self.weight.data = self.weight.coalesce().to_dense()
+               
+    def _convert_to_sparse(self):
+        if str(torch.__version__) <= "0.4.1" and not hasattr(self.weight, '_values') and not hasattr(self.weight, '_indices'):
+            print("Weight already sparse")
+        elif str(torch.__version__) >= "1.0.0" and not hasattr(self.weight, "indicies") and not hasattr(self.weight, "values"):
+            print("Weight already sparse")
+        else:
+            w = self.weight.data.cpu().numpy()
+            matrix = coo_matrix(w)
+            matrix = matrix.tocoo().astype(np.float32)
+            ind = torch.from_numpy(np.vstack((matrix.row, matrix.col))).long()
+            vals = torch.from_numpy(matrix.data)
+            sh = torch.Size(matrix.shape)
+            self.weight.data = torch.sparse.FloatTensor(ind, vals, sh)
+    
+    
+    def forward(self, input):
+        if self.sparse:
+            insize = input.size()
+            w_size = self.weight.size()
+            if insize[1] == w_size[1]:
+                return (torch.mm(self.weight, input.t()) + self.bias.view(self.out_features, -1)).t()
+            else:
+                return torch.mm(self.weight, input) + self.bias.view(self.out_features, -1)
+        else:
+            return F.linear(input, self.weight, self.bias)
+    
+    @property
+    def sparse(self):
+        return self._sparse
+    
+    @sparse.setter
+    def sparse(self, value):
+        if value and not self._sparse:
+            self._sparse = True
+            self._convert_to_sparse()
+        elif not value and self._sparse:
+            self._sparse = False
+            self._convert_to_dense()
+        else:
+            print(f"Sparse already {value}")
