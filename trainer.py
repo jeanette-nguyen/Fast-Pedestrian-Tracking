@@ -181,7 +181,7 @@ class FasterRCNNTrainer(nn.Module):
                     mask = m.mask.data.cpu().numpy()
                     grad_tensor = m.weight.grad.data.cpu().numpy()
                     grad_tensor = np.where(mask==0, 0, grad_tensor)
-                    m.weight.grad.data = torch.from_numpy(grad_tensor).to(dev)
+                    m.weight.grad.data = t.from_numpy(grad_tensor).to(dev)
             # for name, p in model.named_parameters():
             #     if "mask" in name:
             #         continue
@@ -194,7 +194,7 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses
 
-    def save(self, save_optimizer=False, save_path=None, **kwargs):
+    def save(self, save_optimizer=False, save_path=None, prune=False, **kwargs):
         """serialize models include optimizer and other info
         return path where the model-file is stored.
 
@@ -230,7 +230,8 @@ class FasterRCNNTrainer(nn.Module):
             save_path = 'checkpoints/fasterrcnn_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
-
+        if prune:
+            save_path += "_prune"
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)

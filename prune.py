@@ -69,9 +69,9 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         print(log_info)
         print("\n\n")
         
-        if eval_result['map'] > best_map:
-            best_map = eval_result['map']
-            best_path = trainer.save(best_map=best_map)
+        #if eval_result['map'] > best_map:
+        best_map = eval_result['map']
+        best_path = trainer.save(best_map=best_map, prune=True)
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)
@@ -115,7 +115,7 @@ def main():
         else:
             trainer.faster_rcnn.prune_by_percentile(q=opt.percentile_sensitivity)
         prune_utils.print_nonzeros(trainer.faster_rcnn)
-        train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map, prune=True)
+        train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         trainer.faster_rcnn.set_pruned()
     else:
         print("Must specify load path to pretrained model")
