@@ -20,5 +20,5 @@ def get_size(model, sparse=False):
                 s = numpy_w.nbytes
                 tot_size += s
             print(f"Size of {n}: {s} bytes ({s / 1000000.} MBytes)")
-    print(f"Total Size: {tot_size}")
+    print(f"Total Size: {tot_size} ({tot_size/1000000.} MBytes)")
     

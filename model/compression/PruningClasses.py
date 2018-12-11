@@ -158,13 +158,21 @@ class SparseDenseLinear(Linear):
                                                    bias=b)
             self._sparse = Masked.sparse
             self.weight = Masked.weight
+            if self._sparse:
+                self._convert_to_sparse()
             self.bias = Masked.bias
         else:
             assert in_features is not None and out_features is not None, "Specify in_features and out_feautres if no MaskedLinear to initialize"
             super(SparseDenseLinear, self).__init__(in_features, out_features, bias=bias)
             self._sparse = False
+        self.check_sparsity()
+        
+    def __repr__(self):
+        return self.__class__.__name__ + '(' \
+            + 'in_features=' + str(self.in_features) \
+            + ', out_feaetures=' + str(self.out_features) \
+            + ', bias=' + str(self.bias is not None) + ')'
             
-
     def _convert_to_dense(self):
         if str(torch.__version__) <= "0.4.1":
             if hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
@@ -174,19 +182,25 @@ class SparseDenseLinear(Linear):
                 self.weight.data = self.weight.coalesce().to_dense()
                
     def _convert_to_sparse(self):
-        if str(torch.__version__) <= "0.4.1" and not hasattr(self.weight, '_values') and not hasattr(self.weight, '_indices'):
+        if str(torch.__version__) <= "0.4.1" and hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
             print("Weight already sparse")
-        elif str(torch.__version__) >= "1.0.0" and not hasattr(self.weight, "indicies") and not hasattr(self.weight, "values"):
+        elif str(torch.__version__) >= "1.0.0" and hasattr(self.weight, "indicies") and hasattr(self.weight, "values"):
             print("Weight already sparse")
         else:
+            dev = self.weight.device
             w = self.weight.data.cpu().numpy()
             matrix = coo_matrix(w)
             matrix = matrix.tocoo().astype(np.float32)
             ind = torch.from_numpy(np.vstack((matrix.row, matrix.col))).long()
             vals = torch.from_numpy(matrix.data)
             sh = torch.Size(matrix.shape)
-            self.weight.data = torch.sparse.FloatTensor(ind, vals, sh)
+            self.weight.data = torch.sparse.FloatTensor(ind, vals, sh).to(dev)
     
+    def check_sparsity(self):
+        if self.sparse == True and not hasattr(self.weight, '_values') and not hasattr(self.weight, '_indices'):
+            self._convert_to_sparse()
+        elif self.sparse == False and hasattr(self.weight, '_values') and hasattr(self.weight, '_indices'):
+            self._convert_to_dense()
     
     def forward(self, input):
         if self.sparse:

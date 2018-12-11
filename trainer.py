@@ -340,6 +340,16 @@ class FasterRCNNTrainer(nn.Module):
         self.sparse = True
         self.faster_rcnn = quantization.quantize(self.faster_rcnn, bits=bits, verbose=verbose)
 
+    def replace_with_sparsedense(self):
+        self.faster_rcnn.replace_with_sparsedense()
+
+    def set_sparse(self):
+        self.sparse = True
+        self.faster_rcnn.set_sparse()
+    
+    def set_dense(self):
+        self.sparse = False
+        self.faster_rcnn.set_dense()
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
     sigma2 = sigma ** 2
