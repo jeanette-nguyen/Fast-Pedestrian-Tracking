@@ -2,6 +2,8 @@ from __future__ import  absolute_import
 # though cupy is not used but without this line, it raise errors...
 import cupy as cp
 import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import ipdb
 import matplotlib.pyplot as plt
@@ -14,7 +16,7 @@ from torch.utils import data as data_
 import torch
 from trainer import FasterRCNNTrainer
 from utils import array_tool as at
-from utils.vis_tool import vis_bbox
+from utils.vis_tool import visdom_bbox
 from utils.eval_tool import eval_detection_voc
 
 # fix for ulimit
@@ -22,7 +24,7 @@ from utils.eval_tool import eval_detection_voc
 import resource
 
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
-resource.setrlimit(resource.RLIMIT_NOFILE, (20480, rlimit[1]))
+resource.setrlimit(resource.RLIMIT_NOFILE, (2048, rlimit[1]))
 
 def transform_bbox(bbox_):
     """
@@ -57,8 +59,9 @@ def eval(dataloader, faster_rcnn, test_num=10000):
         gt_bboxes, gt_labels, use_07_metric=True)
     return result
 
-def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
-    for epoch in range(opt.epoch):
+def train(opt, faster_rcnn, dataloader,
+          test_dataloader, trainer, lr_, best_map, start_epoch):
+    for epoch in range(start_epoch, start_epoch+opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for ii, (img, bbox_, label_, scale) in pbar:
@@ -76,37 +79,53 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 roicls = losses[3].cpu().data.numpy()
                 tot = losses[4].cpu().data.numpy()
                 pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}")
-            if (ii + 1) % 1000 == 0:
+            if (ii + 1) % 100 == 0:
+                if os.path.exists(opt.debug_file):
+                    ipdb.set_trace()
+
+                # plot loss
+                trainer.vis.plot_many(trainer.get_meter_data())
+
                 print(trainer.get_meter_data())
                 try:
                     ori_img_ = inverse_normalize(at.tonumpy(img[0]))
-                    gt_img = vis_bbox(ori_img_,
+                    gt_img = visdom_bbox(ori_img_,
                                         at.tonumpy(bbox_[0]),
                                         at.tonumpy(label_[0]))
+                    trainer.vis.img('gt_img', gt_img)
                     plt.show()
 
                     # plot predicti bboxes
                     _bboxes, _labels, _scores = trainer.faster_rcnn.predict([ori_img_], visualize=True)
-                    pred_img = vis_bbox(ori_img_,
+                    pred_img = visdom_bbox(ori_img_,
                                         at.tonumpy(_bboxes[0]),
                                         at.tonumpy(_labels[0]).reshape(-1),
                                         at.tonumpy(_scores[0]))
                     plt.show()
+                    trainer.vis.img('pred_img', pred_img)
+
+                    # rpn confusion matrix(meter)
+                    trainer.vis.text(str(trainer.rpn_cm.value().tolist()),
+                                     win='rpn_cm')
+                    # roi confusion matrix
+                    trainer.vis.img('roi_cm', at.totensor(trainer.roi_cm.conf,
+                                                          False).float())
                 except:
                     print("Cannot display images")
                 
                 
         eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
+        trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
                                                         str(trainer.get_meter_data()))
+        trainer.vis.log(log_info)
         print("Evaluation Results: ")
         print(log_info)
         print("\n\n")
         
-        if eval_result['map'] > best_map:
-            best_map = eval_result['map']
-            best_path = trainer.save(best_map=best_map)
+        best_map = eval_result['map']
+        best_path = trainer.save(best_map=best_map, epoch=epoch)
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)
@@ -117,6 +136,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
 
 
 def main():
+    print(opt)
     dataset = Dataset(opt)
     dataloader = data_.DataLoader(dataset, \
                                 batch_size=1, \
@@ -135,22 +155,29 @@ def main():
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
+    trainer.vis.text(dataset.db.label_names, win='labels')
     best_map = 0
     lr_ = opt.lr
+    start_epoch = 0
     
     if opt.load_path:
         assert os.path.isfile(opt.load_path), 'Checkpoint {} does not exist.'.format(opt.load_path)
         checkpoint = torch.load(opt.load_path)['other_info']
-        #start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch']
         best_map = checkpoint['best_map']
         trainer.load(opt.load_path)
         print("="*30+"   Checkpoint   "+"="*30)
         print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, 1)) #no saved epoch, put in 1 for now
     
     
-    train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
+    train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_,
+          best_map, start_epoch)
 
+
+# def test_caltech():
+#     import numpy as np
+#     dataset = Dataset(opt)
+#     dataset.db.get_example(index=8251)
 
 if __name__ == "__main__":
-    print(opt)
     main()

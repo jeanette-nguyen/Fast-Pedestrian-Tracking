@@ -29,7 +29,7 @@ from core.logger import Logger
 from utils.constants import *
 
 # Module level constants
-DEBUG = False
+DEBUG = True
 
 
 def parse_cmds():
@@ -46,7 +46,8 @@ def main():
     args = parse_cmds()
     if DEBUG:
         # dest_dir = os.path.join(os.path.abspath(os.pardir), 'data')
-        dest_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset'
+        dest_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking' \
+                   '/dataset/1'
         src_dir = '/data6/lekevin/fast_track/caltech-pedestrian-dataset' \
                   '-converter'
     else:
@@ -207,7 +208,10 @@ class DatasetGenerator(object):
                 occlusion = [datum['occl'] for datum in data]
                 hiding = [datum['hide'] for datum in data]
                 locked = [datum['hide'] for datum in data]
-                n_lbls.append(len(coordinates))
+
+                n_, coordinates, label = self._filter_data(occlusion,
+                                                       coordinates, label)
+                n_lbls.append(n_)
                 coord.append(coordinates)
                 lbl.append(label)
                 occl.append(occlusion)
@@ -235,6 +239,30 @@ class DatasetGenerator(object):
 
         # Group frames to videos to sets
         self._group_objects()
+
+    def _filter_data(self, occl, coord, lbl):
+        MIN_WIDTH = 10
+        MIN_HEIGHT = 20
+
+        keep_idx = np.array(np.where(np.array(occl) == 0)).reshape(-1, )
+        bboxes = np.array(coord)[keep_idx]
+        w_idx = np.array(
+            np.where(np.reshape(bboxes[:, 2], (-1,)) >= MIN_WIDTH))
+        h_idx = np.array(np.where(np.reshape(bboxes[:, 3], (-1,))
+                                  >= MIN_HEIGHT))
+        w_h_idx = np.intersect1d(w_idx, h_idx)
+        bboxes = bboxes[w_h_idx]
+        bboxes = bboxes.tolist()
+
+        label = np.array(lbl)[keep_idx]
+        label = label[w_h_idx]
+        label = label.tolist()
+        n_lbls = len(label)
+        if len(bboxes) == 0:
+            bboxes = np.nan
+            label = ['bg']
+            n_lbls = 0
+        return n_lbls, bboxes, label
 
     def _clean_up_filenames(self):
         """Grab meta data from filenames"""

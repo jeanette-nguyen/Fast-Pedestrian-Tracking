@@ -13,16 +13,20 @@ from utils.constants import *
 # Module level constants
 #CLS_IDX = {'0': 3, 'person': 0, 'people':1, 'person?':2, 'person-fa':0}
 CLS_IDX = {'person': 0, 'people':1, 'person?':2, 'person-fa':0}
+img_dir = '/data6/lekevin/fast_track/caltech-pedestrian-dataset-converter/data/images'
 
 class CaltechBboxDataset:
     """Bounding box dataset for Caltech Pedestrian"""
 
-    def __init__(self, data_dir, split=TRAIN, set_id='set00'):
+    def __init__(self, data_dir, split=TRAIN, set_id=None):
         self.split = split
         csv_file = os.path.join(data_dir, 'data_{}.csv'.format(self.split))
         data = pd.read_csv(csv_file)
-        data = data[data[Col.SET] == set_id]
+        if set_id is not None:
+            data = data[data[Col.SET] == set_id]
+        data[Col.IMAGES] = img_dir + '/' + os.path.basename(data[Col.IMAGES])
         self.data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+        self.label_names = tuple(CLS_IDX.keys())
 
     def __len__(self):
         return len(self.data)
@@ -30,12 +34,13 @@ class CaltechBboxDataset:
     def get_example(self, index):
         image_filename = self.data.loc[index, Col.IMAGES]
         image = read_image(image_filename)
+        occl = np.array(eval(self.data.loc[index, Col.OCCL]))
 
         bboxes = np.array(eval(self.data.loc[index, Col.COORD])) #k by 4 [x_min, y_min, width, height]
         bb_copy = bboxes.copy()
-        
+
         # Reshape to be [y_min, x_min, y_max, x_max]
-        
+
         bb_copy[:, 2] += bb_copy[:, 0]
         bb_copy[:, 3] += bb_copy[:, 1]
         bboxes[:, 0], bboxes[:, 1] = bb_copy[:, 1], bb_copy[:, 0]
@@ -43,7 +48,7 @@ class CaltechBboxDataset:
 
 
         label = eval(self.data.loc[index, Col.LABEL])
-        
+
         bboxes = np.stack(bboxes).astype(np.float32)
         label = np.array([CLS_IDX[i] for i in label])
         return image, bboxes, label

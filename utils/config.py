@@ -8,8 +8,8 @@ from pprint import pprint
 class Config:
     # data
     mask_lin = True
-    mask_conv = True
-    voc_data_dir = 'dataset'
+    mask_conv = False
+    voc_data_dir = 'dataset/1'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 8
@@ -28,7 +28,7 @@ class Config:
 
 
     # visualization
-    env = 'faster-rcnn'  # visdom env
+    env = 'faster-rcnn_allsets'  # visdom env
     port = 8097
     plot_every = 40  # vis every N iter
 
