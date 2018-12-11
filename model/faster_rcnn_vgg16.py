@@ -142,10 +142,9 @@ class VGG16RoIHead(nn.Module):
         indices_and_rois =  xy_indices_and_rois.contiguous()
 
         pool = self.roi(x, indices_and_rois)
+        pool = pool.view(pool.size(0), -1)
         if self.sparse:
-            pool = pool.view(-1, pool.size(0))
-        else:
-            pool = pool.view(pool.size(0), -1)
+            pool = pool.t()
         fc7 = self.classifier(pool)
         if self.sparse:
             fc7 = fc7.t()

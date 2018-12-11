@@ -23,6 +23,8 @@ def quantize(model, bits=5, verbose=False):
     for sequential in model.children():
         if "maskedlinear" in str(sequential).lower():
             for name, module in sequential.named_modules():
+                if hasattr(module, 'sparse'):
+                    module.sparse = True
                 if name and "Sequential" not in str(module) and "masked" in str(module).lower():
                     dev = module.weight.device
                     weight = module.weight.data.cpu().numpy()

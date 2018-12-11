@@ -174,14 +174,22 @@ class FasterRCNNTrainer(nn.Module):
         losses = self.forward(imgs, bboxes, labels, scale)
         losses.total_loss.backward()
         if prune_train:
-            for name, p in model.named_parameters():
-                if "mask" in name:
-                    continue
-                dev = p.device
-                tensor = p.data.cpu().numpy()
-                grad_tensor = p.grad.data.cpu().numpy()
-                grad_tensor = np.where(tensor==0, 0, grad_tensor)
-                p.grad.data = torch.from_numpy(grad_tensor).to(dev)
+            for name, m in self.named_modules():
+                if hasattr(m, 'mask') and hasattr(m, 'weight'):
+                    dev = m.weight.device
+                    tensor = m.weight.data.cpu().numpy()
+                    mask = m.mask.data.cpu().numpy()
+                    grad_tensor = m.weight.grad.data.cpu().numpy()
+                    grad_tensor = np.where(mask==0, 0, grad_tensor)
+                    m.weight.grad.data = torch.from_numpy(grad_tensor).to(dev)
+            # for name, p in model.named_parameters():
+            #     if "mask" in name:
+            #         continue
+            #     dev = p.device
+            #     tensor = p.data.cpu().numpy()
+            #     grad_tensor = p.grad.data.cpu().numpy()
+            #     grad_tensor = np.where(tensor==0, 0, grad_tensor)
+            #     p.grad.data = torch.from_numpy(grad_tensor).to(dev)
         self.optimizer.step()
         self.update_meters(losses)
         return losses
