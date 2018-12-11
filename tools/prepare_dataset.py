@@ -45,8 +45,10 @@ def parse_cmds():
 def main():
     args = parse_cmds()
     if DEBUG:
-        dest_dir = os.path.join(os.path.abspath(os.pardir), 'data')
-        src_dir = '/Users/ktl014/PycharmProjects/ece285/caltech-pedestrian-dataset-converter'
+        # dest_dir = os.path.join(os.path.abspath(os.pardir), 'data')
+        dest_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset'
+        src_dir = '/data6/lekevin/fast_track/caltech-pedestrian-dataset' \
+                  '-converter'
     else:
         dest_dir = args.path
         src_dir = args.data_dir
@@ -150,16 +152,6 @@ class DatasetGenerator(object):
 
     def _get_images_paths(self):
         """Get image files from data directory"""
-        if DEBUG:
-            root = '/Users/ktl014/PycharmProjects/ece285/Fast-Pedestrian-Tracking/data/'
-            # images = open(os.path.join(root, 'images.txt')).read().splitlines()
-            # invalid_imgs = open(os.path.join(root, 'invaid_images.txt')).read().splitlines()
-            valid_imgs = []
-            for tp in [('images.txt', True), ('invalid_images.txt', False)]:
-                images = open(os.path.join(root, tp[0])).read().splitlines()
-                images = [(i, tp[1]) for i in images]
-                valid_imgs.extend(images)
-
         if self.check_valid:
             images = glob.glob(os.path.join(self.src_dir, 'data', 'images', '*'))
             valid_imgs = []
@@ -202,6 +194,9 @@ class DatasetGenerator(object):
         coord = []
         lbl = []
         n_lbls = []
+        occl = []
+        hide = []
+        lock = []
         for idx, row in self.dataset_df.iterrows():
             data = self.annotations[row[Col.SET]][row[Col.VIDEO]][
                 Col.FRAME + 's']
@@ -209,16 +204,28 @@ class DatasetGenerator(object):
                 data = data[str(row[Col.FRAME])]
                 coordinates = [datum['pos'] for datum in data]
                 label = [datum['lbl'] for datum in data]
+                occlusion = [datum['occl'] for datum in data]
+                hiding = [datum['hide'] for datum in data]
+                locked = [datum['hide'] for datum in data]
                 n_lbls.append(len(coordinates))
                 coord.append(coordinates)
                 lbl.append(label)
+                occl.append(occlusion)
+                hide.append(hiding)
+                lock.append(locked)
             else:
                 n_lbls.append(0)
                 coord.append(np.nan)
-                lbl.append(np.nan)
+                lbl.append(['bg'])
+                occl.append([0])
+                hide.append([0])
+                lock.append([0])
         self.dataset_df[Col.COORD] = coord
         self.dataset_df[Col.LABEL] = lbl
         self.dataset_df[Col.N_LABELS] = n_lbls
+        self.dataset_df[Col.OCCL] = occl
+        self.dataset_df[Col.HIDE] = hide
+        self.dataset_df[Col.LOCK] = lock
 
         self.logger.info('Loaded annotations. Number of frames w/out '
                          'annotations\n{}'.format(self.dataset_df.isna().sum()))

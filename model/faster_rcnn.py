@@ -6,6 +6,7 @@ import cupy as cp
 from utils import array_tool as at
 from model.utils.bbox_tools import loc2bbox
 from model.utils.nms import non_maximum_suppression
+import numpy as np
 
 from torch import nn
 from data.dataset import preprocess
@@ -349,7 +350,5 @@ class FasterRCNN(nn.Module):
         for n, m in self.named_modules():
             if hasattr(m, "sparse"):
                 m.sparse = False
-
-
 
 

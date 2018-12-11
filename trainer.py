@@ -232,6 +232,7 @@ class FasterRCNNTrainer(nn.Module):
                 save_path += '_%s' % v_
         if prune:
             save_path += "_prune"
+
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)

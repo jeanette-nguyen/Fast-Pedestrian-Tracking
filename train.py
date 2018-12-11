@@ -57,7 +57,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
         gt_bboxes, gt_labels, use_07_metric=True)
     return result
 
-def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
+def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map, prune=False):
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
@@ -107,6 +107,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         # if eval_result['map'] > best_map:
         best_map = eval_result['map']
         best_path = trainer.save(best_map=best_map)
+
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)

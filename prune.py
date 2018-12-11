@@ -80,7 +80,6 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         if epoch == 13: 
             break
 
-
 def main():
     dataset = Dataset(opt)
     dataloader = data_.DataLoader(dataset, \
@@ -116,6 +115,7 @@ def main():
             trainer.faster_rcnn.prune_by_percentile(q=opt.percentile_sensitivity)
         prune_utils.print_nonzeros(trainer.faster_rcnn)
         train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
+
         trainer.faster_rcnn.set_pruned()
     else:
         print("Must specify load path to pretrained model")
