@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
-
+from utils.config import opt
 import torch
-from model.compression.PruningClasses import PruningModule, MaskedLinear, MaskedConvolution
+from model.compression.PruningClasses import PruningModule, MaskedLinear, MaskedConvolution, SparseDenseLinear
 
 class VGG(PruningModule):
     """
@@ -16,9 +16,14 @@ class VGG(PruningModule):
     def __init__(self, features, num_classes=1000, init_weights=True, mask=False):
         super(VGG, self).__init__()
         self.mask = mask
-        if mask:
+        if opt.sparse_dense:
+            print("Using Sparse Dense (config.sparse_dense")
+            linear = SparseDenseLinear
+        elif mask and not opt.sparse_dense:
             print("Using Masked Linear")
-        linear = MaskedLinear if mask else nn.Linear
+            linear = MaskedLinear
+        else:
+            linear = nn.Linear
         self.features = features
         self.classifier = nn.Sequential(
             linear(512 * 7 * 7, 4096),

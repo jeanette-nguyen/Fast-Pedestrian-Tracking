@@ -12,12 +12,13 @@ from torch import nn
 from data.dataset import preprocess
 from torch.nn import functional as F
 from utils.config import opt
+from model.compression.PruningClasses import SparseDenseLinear
 
 
 def nograd(f):
     def new_f(*args,**kwargs):
         with t.no_grad():
-           return f(*args,**kwargs)
+            return f(*args,**kwargs)
     return new_f
 
 class FasterRCNN(nn.Module):
@@ -82,6 +83,7 @@ class FasterRCNN(nn.Module):
         self.loc_normalize_mean = loc_normalize_mean
         self.loc_normalize_std = loc_normalize_std
         self.use_preset('evaluate')
+        self.sparse = False
 
     @property
     def n_class(self):
@@ -327,4 +329,26 @@ class FasterRCNN(nn.Module):
                 tensor = m.weight.data.cpu().numpy()
                 mask = m.mask.data.cpu().numpy()
                 m.weight.data = t.from_numpy(tensor * mask).to(w_dev)
+
+    def replace_with_sparsedense(self):
+        for m in self.children():
+            if "MaskedLinear" in str(m):
+                classifier = list(m.classifier)
+                for i, mod in enumerate(classifier):
+                    if "MaskedLinear" in str(mod) and hasattr(mod, 'weight'):
+                        classifier[i] = SparseDenseLinear(Masked=mod)
+                m.classifier = nn.Sequential(*classifier)
+
+    def set_sparse(self):
+        self.sparse = True
+        for n, m in self.named_modules():
+            if hasattr(m, "sparse"):
+                m.sparse = True
+
+    def set_dense(self):
+        self.sparse = False
+        for n, m in self.named_modules():
+            if hasattr(m, "sparse"):
+                m.sparse = False
+
 

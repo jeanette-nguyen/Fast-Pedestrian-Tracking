@@ -104,9 +104,10 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map,
         print(log_info)
         print("\n\n")
         
-        if eval_result['map'] > best_map:
-            best_map = eval_result['map']
-            best_path = trainer.save(best_map=best_map, prune=prune)
+        # if eval_result['map'] > best_map:
+        best_map = eval_result['map']
+        best_path = trainer.save(best_map=best_map)
+
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)

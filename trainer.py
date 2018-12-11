@@ -12,6 +12,10 @@ from utils.vis_tool import Visualizer
 import pprint
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
+from scipy.sparse import coo_matrix
+from model.compression import quantization
+import numpy as np
+
 
 LossTuple = namedtuple('LossTuple',
                        ['rpn_loc_loss',
@@ -61,6 +65,7 @@ class FasterRCNNTrainer(nn.Module):
         self.rpn_cm = ConfusionMeter(2)
         self.roi_cm = ConfusionMeter(4)#ConfusionMeter(21)
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}  # average loss
+        self.sparse = False
 
     def forward(self, imgs, bboxes, labels, scale):
         """Forward Faster R-CNN and calculate losses.
@@ -164,10 +169,27 @@ class FasterRCNNTrainer(nn.Module):
 
         return LossTuple(*losses)
 
-    def train_step(self, imgs, bboxes, labels, scale):
+    def train_step(self, imgs, bboxes, labels, scale, prune_train=False):
         self.optimizer.zero_grad()
         losses = self.forward(imgs, bboxes, labels, scale)
         losses.total_loss.backward()
+        if prune_train:
+            for name, m in self.named_modules():
+                if hasattr(m, 'mask') and hasattr(m, 'weight'):
+                    dev = m.weight.device
+                    tensor = m.weight.data.cpu().numpy()
+                    mask = m.mask.data.cpu().numpy()
+                    grad_tensor = m.weight.grad.data.cpu().numpy()
+                    grad_tensor = np.where(mask==0, 0, grad_tensor)
+                    m.weight.grad.data = t.from_numpy(grad_tensor).to(dev)
+            # for name, p in model.named_parameters():
+            #     if "mask" in name:
+            #         continue
+            #     dev = p.device
+            #     tensor = p.data.cpu().numpy()
+            #     grad_tensor = p.grad.data.cpu().numpy()
+            #     grad_tensor = np.where(tensor==0, 0, grad_tensor)
+            #     p.grad.data = torch.from_numpy(grad_tensor).to(dev)
         self.optimizer.step()
         self.update_meters(losses)
         return losses
@@ -185,12 +207,21 @@ class FasterRCNNTrainer(nn.Module):
             save_path(str): the path to save models.
         """
         save_dict = dict()
+        save_dict['sparse_list'] = []
+        if self.sparse:
+            for n, m in self.named_modules():
+                if hasattr(m, "sparse"):
+                    if m.sparse and hasattr(m, 'weight'):
+                        w_dev = m.weight.device
+                        w = m.weight.data.coalesce().to_dense()
+                        m.weight.data = w.to(w_dev)
+                    save_dict['sparse_list'].append(str(m))
 
         save_dict['model'] = self.faster_rcnn.state_dict()
         save_dict['config'] = opt._state_dict()
         save_dict['other_info'] = kwargs
         save_dict['vis_info'] = self.vis.state_dict()
-
+        save_dict['sparse'] = self.sparse
         if save_optimizer:
             save_dict['optimizer'] = self.optimizer.state_dict()
 
@@ -199,9 +230,8 @@ class FasterRCNNTrainer(nn.Module):
             save_path = 'checkpoints/fasterrcnn_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
-
         if prune:
-            save_path += "_pruned"
+            save_path += "_prune"
 
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
@@ -246,16 +276,33 @@ class FasterRCNNTrainer(nn.Module):
             if k in curr_model_kvpair:
                 curr_model_kvpair[k] = v
             else:
-                print(f"Key Weight Mistmatch at: {str(k)} -- Not Loading")
-        # count = 0
-        # for k, v in curr_model_kvpair.items():
-        #     if "mask" in k:
-        #         continue
-        #     layer_name, weights = new[count]
-        #     curr_model_kvpair[k] = weights
-        #     count += 1
+                print(f"Key Weight Mismatch at: {str(k)} -- Not Loading")
         return curr_model_kvpair
-    
+
+    def to_sparse(self, sparse_mx, n, m):
+        print(f"Turning Sparse: {n}: {m}")
+        sparse_mx = sparse_mx.tocoo().astype(np.float32)
+        indices = t.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col))).long()
+        values = t.from_numpy(sparse_mx.data)
+        shape = t.Size(sparse_mx.shape)
+        return t.sparse.FloatTensor(indices, values, shape)
+
+    def revert_to_sparse(self, sparse_list):
+        self.sparse = True
+        for n, m in self.named_modules():
+            if str(m) in sparse_list:
+                m.sparse = True
+                if hasattr(m, 'weight') and not m.weight.is_sparse:
+                    try:
+                        dev = m.weight.device
+                        weight = m.weight.data.cpu().numpy()
+                        matrix = coo_matrix(weight)
+                        tensor = self.to_sparse(matrix, n, str(m))
+                        m.weight.data = tensor.to(dev)
+                    except:
+                        raise ValueError(f"Couldn't convert {n},{str(m)} to sparse")
+        return self
+
     def load(self, path, load_optimizer=False, parse_opt=False, debug=False, simple=opt.use_simple,):
         state_dict = t.load(path)
         if 'model' in state_dict:
@@ -269,6 +316,10 @@ class FasterRCNNTrainer(nn.Module):
             opt._parse(state_dict['config'])
         if 'optimizer' in state_dict and load_optimizer:
             self.optimizer.load_state_dict(state_dict['optimizer'])
+        if 'sparse' in state_dict and state_dict['sparse'] == True:
+            print("Reverting to Sparse")
+            self.revert_to_sparse(state_dict['sparse_list'])
+        print(f"Successfully Loaded Model: {path}")
         return self
         
     def update_meters(self, losses):
@@ -285,6 +336,20 @@ class FasterRCNNTrainer(nn.Module):
     def get_meter_data(self):
         return {k: v.value()[0] for k, v in self.meters.items()}
 
+    def quantize(self, bits=5, verbose=False):
+        self.sparse = True
+        self.faster_rcnn = quantization.quantize(self.faster_rcnn, bits=bits, verbose=verbose)
+
+    def replace_with_sparsedense(self):
+        self.faster_rcnn.replace_with_sparsedense()
+
+    def set_sparse(self):
+        self.sparse = True
+        self.faster_rcnn.set_sparse()
+    
+    def set_dense(self):
+        self.sparse = False
+        self.faster_rcnn.set_dense()
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
     sigma2 = sigma ** 2
@@ -306,3 +371,4 @@ def _fast_rcnn_loc_loss(pred_loc, gt_loc, gt_label, sigma):
     # Normalize by total number of negtive and positive rois.
     loc_loss /= ((gt_label >= 0).sum().float()) # ignore gt_label==-1 for rpn_loss
     return loc_loss
+
