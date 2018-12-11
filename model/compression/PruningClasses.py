@@ -87,7 +87,7 @@ class MaskedLinear(Module):
             self.bias.data.uniform_(-stdv, stdv)
     def forward(self, input):
         if self.training:
-            return F.linear(input, self.weight * self.mask, self.bias) if self.mask else F.linear(input, self.weight, self.bias)
+            return F.linear(input, self.weight * self.mask, self.bias)
         else:
             if self.sparse:
                 return torch.mm(self.weight.data, input) + self.bias.view(self.weight.size(0), -1)
