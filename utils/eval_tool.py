@@ -77,15 +77,14 @@ def eval_detection_voc(
     ap = calc_detection_voc_ap(prec, rec, use_07_metric=use_07_metric)
 
     # log average miss rate metric
-    # mr, fppi = calc_detection_voc_mr_fppi(
-    #     pred_bboxes, pred_labels, pred_scores,
-    #     gt_bboxes, gt_labels, gt_difficults,
-    #     iou_thresh=iou_thresh)
-    # # take log of mr first or after??
-    # # mr = np.log10(mr)
-    # amr = calc_detection_voc_ap(mr, fppi, use_07_metric=use_07_metric)
+    mr, fppi = calc_detection_voc_mr_fppi(
+        pred_bboxes, pred_labels, pred_scores,
+        gt_bboxes, gt_labels, gt_difficults,
+        iou_thresh=iou_thresh)
 
-    return {'ap': ap, 'map': np.nanmean(ap)}
+    amr = calc_detection_voc_ap(mr, fppi, use_07_metric=use_07_metric)
+
+    return {'ap': ap, 'map': np.nanmean(ap), 'amr': amr, 'lamr': np.nanmean(amr)}
 
 
 def calc_detection_voc_prec_rec(
