@@ -193,7 +193,7 @@ class SparseDenseLinear(Linear):
             self.weight.data = torch.sparse.FloatTensor(ind, vals, sh).to(dev)
     
     def check_sparsity(self):
-        if self.sparse:
+        if self._sparse:
             if self.weight.is_sparse:
                 return
             else:
@@ -205,7 +205,7 @@ class SparseDenseLinear(Linear):
                 self._convert_to_dense()
     
     def forward(self, input):
-        if self.sparse:
+        if self._sparse:
             insize = input.size()
             w_size = self.weight.size()
             if insize[1] == w_size[1]:
