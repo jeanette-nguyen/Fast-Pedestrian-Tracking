@@ -27,7 +27,7 @@ class PruningModule(Module):
         percentile_value = np.percentile(abs(all_alive), q)
         print(f"Pruning with Threshold: {percentile_value}")
         for i, (name, module) in enumerate(self.named_modules()):
-            if 'Masked' in str(module) and 'Sequential' not in str(module):
+            if 'Masked' in str(module) and 'Sequential' not in str(module) and name:
                 if debug:
                     print("Pruning : ", str(name))
                 module.prune(threshold=percentile_value)
