@@ -18,7 +18,7 @@ parser.add_argument("--bits", "-b", type=int, default=5, help="Number of bits to
 parser.add_argument("--verbose", default=True, action='store_false', help="Print verbose or not")
 parser.add_argument("--save_path", type=str, default="./checkpoints/quantized_model.model", help="Model save path")
 parser.add_argument("--load_path", type=str, default="./checkpoints/pruned_model.model", help="Pruned model to quantize")
-parser.add_Argument("--convert_sparse_dense", default=False, action='store_true', help="Save a model with SparseDenseLinear rather than MaskedLinear to save space, to use this in the future change utils/config.sparse_dense to True")
+parser.add_argument("--convert_sparse_dense", default=False, action='store_true', help="Save a model with SparseDenseLinear rather than MaskedLinear to save space, to use this in the future change utils/config.sparse_dense to True")
 args = parser.parse_args()
 
 def main():

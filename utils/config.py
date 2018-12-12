@@ -37,7 +37,7 @@ class Config:
 
     # training
     epoch = 14
-    use_adam = False # Use Adam optimizer
+    use_adam = True # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
     # debug
@@ -48,9 +48,6 @@ class Config:
     '''
     Pruning Configs
     '''
-    prune_by_std = True
-    std_sensitivity = 3
-    percentile_sensitivity = 5
     sparse_dense = False
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'

@@ -19,6 +19,15 @@ from utils.eval_tool import eval_detection_voc
 import resource
 from model.compression import prune_utils
 from train import eval
+import argparse
+
+parser = argparse.ArgumentParser(description="Arguments for prune.py")
+parser.add_argument("--prune_by_std", "-std", default=True, 
+                    action="store_false", help="Pruning method. Defaults to prune by standard deviation")
+parser.add_argument("--sensitivity", "-s", type=float, default=3, help="Number of standard devs to scale")
+parser.add_argument("--percentile", "-p", type=float, default=50.0, help="Perecentage of weights ot prune")
+args = parser.parse_args()
+
 
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (20480, rlimit[1]))
@@ -96,7 +105,6 @@ def main():
                                     )
 
     print(f"TRAIN SET: {len(dataloader)} | TEST SET: {len(test_dataloader)}")
-    print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
@@ -109,10 +117,10 @@ def main():
         trainer.load(opt.load_path)
         print("="*30+"   Checkpoint   "+"="*30)
         print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, 1)) #no saved epoch, put in 1 for now
-        if opt.prune_by_std:
-            trainer.faster_rcnn.prune_by_std(opt.std_sensitivity)
+        if args.prune_by_std:
+            trainer.faster_rcnn.prune_by_std(args.sensitivity)
         else:
-            trainer.faster_rcnn.prune_by_percentile(q=opt.percentile_sensitivity)
+            trainer.faster_rcnn.prune_by_percentile(q=args.percentile)
         prune_utils.print_nonzeros(trainer.faster_rcnn)
         train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
 
