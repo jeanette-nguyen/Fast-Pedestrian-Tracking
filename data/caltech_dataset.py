@@ -21,8 +21,22 @@ class CaltechBboxDataset:
         self.split = split
         csv_file = os.path.join(data_dir, 'data_{}.csv'.format(self.split))
         data = pd.read_csv(csv_file)
-        data = data[data[Col.SET] == set_id]
-        self.data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+
+        data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+
+        if split == TRAIN:
+            #data = data[data[Col.SET] == 'set00']
+            self.data = data.head(20000)
+        elif split == TEST:
+            #data = data[data[Col.SET] == 'set06']
+            self.data = data.head(10000)
+        else:
+            #data = data[data[Col.SET] == 'set00']
+            self.data = data.head(10000)
+
+        self.label_names = tuple(CLS_IDX.keys())
+
+
 
     def __len__(self):
         return len(self.data)
@@ -43,7 +57,7 @@ class CaltechBboxDataset:
 
 
         label = eval(self.data.loc[index, Col.LABEL])
-        
+
         bboxes = np.stack(bboxes).astype(np.float32)
         label = np.array([CLS_IDX[i] for i in label])
         return image, bboxes, label

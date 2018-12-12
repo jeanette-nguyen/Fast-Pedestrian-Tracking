@@ -172,7 +172,7 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses
 
-    def save(self, save_optimizer=False, save_path=None, **kwargs):
+    def save(self, epoch, save_optimizer=False, save_path=None, **kwargs):
         """serialize models include optimizer and other info
         return path where the model-file is stored.
 
@@ -190,6 +190,7 @@ class FasterRCNNTrainer(nn.Module):
         save_dict['config'] = opt._state_dict()
         save_dict['other_info'] = kwargs
         save_dict['vis_info'] = self.vis.state_dict()
+        save_dict['epoch'] = epoch
 
         if save_optimizer:
             save_dict['optimizer'] = self.optimizer.state_dict()
