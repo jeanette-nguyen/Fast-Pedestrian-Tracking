@@ -12,8 +12,8 @@ class Config:
     voc_data_dir = 'dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
-    num_workers = 8
-    test_num_workers = 8
+    num_workers = 4
+    test_num_workers = 4
 
     # sigma for l1_smooth_loss
     rpn_sigma = 3.

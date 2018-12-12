@@ -5,18 +5,18 @@ from __future__ import  absolute_import
 import cupy as cp
 import logging
 import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import time
 
 # Third party imports
-import ipdb
-import matplotlib.pyplot as plt
-import torch
+import numpy as np
 from tqdm import tqdm
 
 # Project level imports
 from core.logger import Logger
 from utils.config import opt
-from data.dataset import Dataset, TestDataset, inverse_normalize
+from data.dataset import TestDataset
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from torch.utils import data as data_
 from trainer import FasterRCNNTrainer
@@ -30,17 +30,21 @@ def benchmark(benchmarker, dataloader, faster_rcnn, test_num=1000):
     Logger.section_break(title='Benchmark Begin')
 
     since = time.time()
-    for ii, (imgs, sizes, gt_bboxes_, gt_labels_) in enumerate(dataloader):
+    for ii, \
+        (imgs, sizes, gt_bboxes_, gt_labels_) in tqdm(enumerate(dataloader)):
         sizes = [sizes[0][0].item(), sizes[1][0].item()]
+        since = time.time()
         pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(imgs,
                                                                        [sizes])
 
-        benchmarker[FPS].update(time.time() - since)
+        benchmarker[FPS].update(1/(time.time() - since))
 
-        if ii % 100 == 0:
-            logger.info(f'{ii}: {benchmarker[FPS]}')
+        if ii % 10 == 0:
+            logger.info('{:5}: FPS {t.val:.3f} ({t.avg:.3f})'.
+                        format(ii, t=benchmarker[FPS]))
 
-        if ii == test_num: break
+        if ii == test_num:
+            break
 
     return benchmarker
 
@@ -61,11 +65,13 @@ def main(**kwargs):
 
 
     # Load dataset
-    dataset = Dataset(opt)
+    dataset = TestDataset(opt, split='test')
     dataloader = data_.DataLoader(dataset,
-                                  batch_size=1,
-                                  shuffle=True,
-                                  num_workers=opt.num_workers)
+                                       batch_size=1,
+                                       num_workers=opt.test_num_workers,
+                                       shuffle=False,
+                                       pin_memory=True
+                                       )
 
     logger.info(f"DATASET SIZE: {len(dataloader)}")
     logger.info("Using Mask VGG") if opt.mask else logger.info("Using normal VGG16")
@@ -89,10 +95,14 @@ def main(**kwargs):
 
 
     # Benchmark dataset
-    benchmarker = {FPS: AverageMeter()}
+    fps = AverageMeter()
+    benchmarker = {FPS: fps}
     result = benchmark(benchmarker, dataloader, faster_rcnn, test_num=1000)
-
-    #
+    Logger.section_break('Benchmark completed')
+    model_parameters = filter(lambda p: p.requires_grad, faster_rcnn.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
+    logger.info('[PARAMETERS] {params}'.format(params=params))
+    logger.info('[RUN TIME] {time.avg:.3f} sec/frame'.format(time=result[FPS]))
 
 
 if __name__ == '__main__':
