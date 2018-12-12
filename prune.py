@@ -26,6 +26,7 @@ parser.add_argument("--prune_by_std", "-std", default=True,
                     action="store_false", help="Pruning method. Defaults to prune by standard deviation")
 parser.add_argument("--sensitivity", "-s", type=float, default=3, help="Number of standard devs to scale")
 parser.add_argument("--percentile", "-p", type=float, default=50.0, help="Perecentage of weights ot prune")
+parser.add_argument("--save_path", "-sp", type=str, default="./checkpoints/final_pruned.model", help="final save path after pruning")
 args = parser.parse_args()
 
 
@@ -125,6 +126,7 @@ def main():
         train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
 
         trainer.faster_rcnn.set_pruned()
+        trainer.save(save_path=args.save_path)
     else:
         print("Must specify load path to pretrained model")
     
