@@ -13,6 +13,8 @@ from data.dataset import preprocess
 from torch.nn import functional as F
 from utils.config import opt
 from model.compression.PruningClasses import SparseDenseLinear
+from model.compression.quantization import sparse_mx_to_tensor
+from scipy.sparse import coo_matrix
 
 
 def nograd(f):
@@ -344,11 +346,19 @@ class FasterRCNN(nn.Module):
         for n, m in self.named_modules():
             if hasattr(m, "sparse"):
                 m.sparse = True
+            if hasattr(m, "sparse") and hasattr(m, "weight"):
+                if not m.weight.is_sparse:
+                    dev = m.weight.data.device
+                    sparse_weight = coo_matrix(m.weight.data.cpu().numpy())
+                    m.weight.data = sparse_mx_to_tensor(sparse_weight).to(dev)
 
     def set_dense(self):
         self.sparse = False
         for n, m in self.named_modules():
             if hasattr(m, "sparse"):
                 m.sparse = False
+            if hasattr(m, "sparse") and hasattr(m, "weight"):
+                if m.weight.is_sparse:
+                    m.weight.data = m.weight.data.coalesce().to_dense()
 
 

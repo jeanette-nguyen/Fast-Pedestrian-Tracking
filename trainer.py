@@ -263,6 +263,7 @@ class FasterRCNNTrainer(nn.Module):
     
 
     def generate_state_dict(self, pre_trained, simple=False, debug=False):
+        self.set_dense()
         if simple:
             return self.generate_simple_state_dict(pre_trained, debug)
         new = list(pre_trained.items())
@@ -278,6 +279,7 @@ class FasterRCNNTrainer(nn.Module):
             else:
                 print(f"Key Weight Mismatch at: {str(k)} -- Not Loading")
         return curr_model_kvpair
+
 
     def to_sparse(self, sparse_mx, n, m):
         print(f"Turning Sparse: {n}: {m}")
