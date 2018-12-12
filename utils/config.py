@@ -45,6 +45,9 @@ class Config:
     test_num = 10000
     # model
     load_path = None
+
+    # benchmark
+    benchmark_path = None
     '''
     Pruning Configs
     '''

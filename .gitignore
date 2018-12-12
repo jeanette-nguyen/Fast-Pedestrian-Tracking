@@ -3,6 +3,7 @@ data/*.log
 *.pyc
 core/*.pyc
 tools/*.pyc
+tools/logs/*
 tests/*
 dataset/*
 checkpoints/*
