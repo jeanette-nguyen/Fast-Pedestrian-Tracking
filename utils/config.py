@@ -52,8 +52,8 @@ class Config:
     std_sensitivity = 3
     percentile_sensitivity = 5
     sparse_dense = False
-    # caffe_pretrain = False # use caffe pretrained model instead of torchvision
-    # caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
+    caffe_pretrain = False # use caffe pretrained model instead of torchvision
+    caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
 
 
     def _parse(self, kwargs):
