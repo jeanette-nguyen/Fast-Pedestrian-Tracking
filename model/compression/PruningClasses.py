@@ -11,7 +11,7 @@ from torch.nn.modules.linear import Linear
 from scipy.sparse import coo_matrix
 
 class PruningModule(Module):
-    def prune_by_percentile(self, q=5.0, **kwargs):
+    def prune_by_percentile(self, q=5.0, debug=False, **kwargs):
         """
         Prunes based off of percentile
         """
