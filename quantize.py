@@ -49,7 +49,7 @@ def main():
     print("Saving a maskedmodel")
     trainer.save(save_path=args.save_path)
     print("Saving a SparseDense Model")
-    trainer.convert_sparse_dense()
+    trainer.replace_with_sparsedense()
     sd_file = args.save_path.split("/")
     sd_file[-1] = "SparseDense_" + sd_file[-1]
     sd_file = "/".join(sd_file)
