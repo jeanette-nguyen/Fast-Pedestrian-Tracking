@@ -23,8 +23,14 @@ $ python build.py build_ext --inplace
 ```
 
 # Code Organization
-[demo.ipynb](demo.ipynb) -- Run a demo of our code
-[train.ipynb](train.ipynb) -- Run the training of our model
+[demo.ipynb](demo.ipynb) -- Run a demo of our code  
+[train.ipynb](train.ipynb) -- Run the training of our model  
+
+core/  
+-- data/  
+|   -- __init__.py -- Faster RCNN init  
+|   -- d_util.py --  
+|   -- dataloader.py --  
 
 
 
