@@ -53,7 +53,7 @@ def main():
     sd_file = args.save_path.split("/")
     sd_file[-1] = "SparseDense_" + sd_file[-1]
     sd_file = "/".join(sd_file)
-    trainer.save(sd_file)
+    trainer.save(save_path=sd_file)
 
 
 
