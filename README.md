@@ -19,9 +19,9 @@ cd model/utils/nms/
 python build.py build_ext --inplace
 
 # Code Organization
-Training: train.ipynb
+Training: [train.ipynb](train.ipynb)
 
-Demo: demo.ipynb
+Demo: [demo.ipynb](demo.ipynb)
 
 
 
