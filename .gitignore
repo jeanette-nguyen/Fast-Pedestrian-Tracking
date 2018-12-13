@@ -18,3 +18,4 @@ visdom.out
 tools/.ipynb_checkpoints/*
 go.py
 .DS_Store
+.vscode
