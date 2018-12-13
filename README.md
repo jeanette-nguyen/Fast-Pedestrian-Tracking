@@ -10,18 +10,24 @@ requires Python v3
 
 requires PyTorch >=0.4  
 
-install cupy, you can install via pip install cupy-cuda80 or(cupy-cuda90,cupy-cuda91, etc).
+install cupy:  
+`$ pip install cupy-cuda80`
 
-install other dependencies: pip install -r requirements.txt
+install other dependencies:   
+`$ pip install -r requirements.txt`
 
-Optional, but strongly recommended: build cython code nms_gpu_post:  
-cd model/utils/nms/  
-python build.py build_ext --inplace
+Optional, but strongly recommended: build cython code nms_gpu_post:
+```
+$ cd model/utils/nms/
+$ python build.py build_ext --inplace
+```
 
 # Code Organization
-Training: [train.ipynb](train.ipynb)
+[demo.ipynb](demo.ipynb) -- Run a demo of our code
+[train.ipynb](train.ipynb) -- Run the training of our model
 
-Demo: [demo.ipynb](demo.ipynb)
+
+
 
 
 
