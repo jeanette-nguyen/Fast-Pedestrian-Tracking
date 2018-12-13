@@ -59,7 +59,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
         gt_bboxes, gt_labels, use_07_metric=True)
     return result
 
-def train(opt, faster_rcnn, dataloader, val_dataloader, test_dataloader, trainer, lr_, best_map):
+def train(opt, faster_rcnn, dataloader, val_dataloader, trainer, lr_, best_map):
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
@@ -114,15 +114,19 @@ def train(opt, faster_rcnn, dataloader, val_dataloader, test_dataloader, trainer
 
         # Save after every epoch
         epoch_path = trainer.save(epoch, best_map=0,
-                     save_path='/data6/lekevin/fast_track/jeanette/Fast-Pedestrian-Tracking/checkpoints/fasterrcnn_pretrained_epoch{}'.format(epoch))
+                     #save_path='/data6/lekevin/fast_track/jeanette/Fast-Pedestrian-Tracking/checkpoints/fasterrcnn_pretrained_epoch{}'.format(epoch))
+                     save_path='/data6/lekevin/fast_track/jeanette/Fast-Pedestrian-Tracking/checkpoints/deleteme_{}'.format(epoch))
                 
         eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
-                                                        str(trainer.get_meter_data()))
+        log_info = 'lr:{}, map:{}, lamr:{}, loss:{}'.format(str(lr_),
+                                                  str(eval_result['map']),
+                                                  str(eval_result['lamr']),
+                                                  str(trainer.get_meter_data()))
         trainer.vis.log(log_info)
-        print("Evaluation Results on Validation Set): ")
+        print("Evaluation Results on Validation Set: ")
         print(log_info)
+        print("\n\n")
 
         if eval_result['map'] > best_map:
             best_map = eval_result['map']
@@ -136,23 +140,14 @@ def train(opt, faster_rcnn, dataloader, val_dataloader, test_dataloader, trainer
         if epoch == 13: 
             break
 
-        test_eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
-        test_lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        test_log_info = 'lr:{}, map:{}'.format(str(test_lr_), str(test_eval_result['map']))
-        print("Evaluation Results on Test Set (first 10000): ")
-        print(log_info)
-        print("\n\n")
-
-
 def main():
-    dataset = Dataset(opt)
+    dataset = Dataset(opt, set_id='set00', split='train')
     dataloader = data_.DataLoader(dataset, \
                                 batch_size=1, \
                                 shuffle=True, \
-                                # pin_memory=True,
                                 num_workers=opt.num_workers)
 
-    valset = TestDataset(opt, split='val')
+    valset = TestDataset(opt, set_id='set00', split='val')
     val_dataloader = data_.DataLoader(valset,
                                     batch_size=1,
                                     num_workers=opt.test_num_workers,
@@ -160,14 +155,7 @@ def main():
                                     pin_memory=True
                                     )
 
-    testset = TestDataset(opt, split='test')
-    test_dataloader = data_.DataLoader(testset,
-                                    batch_size=1,
-                                    num_workers=opt.test_num_workers,
-                                    shuffle=False, \
-                                    pin_memory=True
-                                    )
-    print(f"TRAIN SET: {len(dataloader)} | VAL SET: {len(val_dataloader)} | TEST SET: {len(test_dataloader)}")
+    print(f"TRAIN SET: {len(dataloader)} | VAL SET: {len(val_dataloader)}")
     print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
@@ -190,7 +178,7 @@ def main():
         print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, start_epoch))
     
     
-    train(opt, faster_rcnn, dataloader, val_dataloader, test_dataloader, trainer, lr_, best_map)
+    train(opt, faster_rcnn, dataloader, val_dataloader, trainer, lr_, best_map)
 
 
 if __name__ == "__main__":

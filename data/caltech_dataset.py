@@ -12,27 +12,34 @@ from utils.constants import *
 
 # Module level constants
 #CLS_IDX = {'0': 3, 'person': 0, 'people':1, 'person?':2, 'person-fa':0}
-CLS_IDX = {'person': 0, 'people':1, 'person?':2, 'person-fa':0}
+CLS_IDX = {'person': 0, 'people': 1, 'person?': 2, 'person-fa':0}
 
 class CaltechBboxDataset:
     """Bounding box dataset for Caltech Pedestrian"""
 
-    def __init__(self, data_dir, split=TRAIN, set_id='set00'):
+    def __init__(self, data_dir, set_id=None, split=None):
         self.split = split
         csv_file = os.path.join(data_dir, 'data_{}.csv'.format(self.split))
         data = pd.read_csv(csv_file)
 
-        data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
-
-        if split == TRAIN:
-            #data = data[data[Col.SET] == 'set00']
-            self.data = data.head(20000)
-        elif split == TEST:
-            #data = data[data[Col.SET] == 'set06']
-            self.data = data.head(10000)
+        if set_id is None:
+            data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+            if split == TRAIN:
+                self.data = data.head(20000)
+            elif split == TEST:
+                self.data = data.head(10000)
+            else:
+                self.data = data.head(10000)
         else:
-            #data = data[data[Col.SET] == 'set00']
-            self.data = data.head(10000)
+            if split == TRAIN:
+                data = data[data[Col.SET] == set_id]
+            elif split == TEST:
+                data = data[data[Col.SET] == set_id]
+            else:
+                data = data[data[Col.SET] == set_id]
+
+            self.data = data[data[Col.N_LABELS] != 0].reset_index(drop=True)
+            self.data = self.data.head(1000)
 
         self.label_names = tuple(CLS_IDX.keys())
 

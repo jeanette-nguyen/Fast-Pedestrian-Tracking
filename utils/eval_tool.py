@@ -81,7 +81,6 @@ def eval_detection_voc(
         pred_bboxes, pred_labels, pred_scores,
         gt_bboxes, gt_labels, gt_difficults,
         iou_thresh=iou_thresh)
-
     amr = calc_detection_voc_ap(mr, fppi, use_07_metric=use_07_metric)
 
     return {'ap': ap, 'map': np.nanmean(ap), 'amr': amr, 'lamr': np.nanmean(amr)}
@@ -449,8 +448,9 @@ def calc_detection_voc_mr_fppi(
             raise ValueError('Length of input iterables need to be same.')
 
     n_fg_class = max(n_pos.keys()) + 1
-    #fppi = [None] * n_fg_class
+    fppi = [None] * n_fg_class
     mr = [None] * n_fg_class
+
 
     for l in n_pos.keys():
         score_l = np.array(score[l])
@@ -471,5 +471,8 @@ def calc_detection_voc_mr_fppi(
 
         if n_pos[l] > 0:
             mr[l] = 1 - tp / n_pos[l]
-    fppi = np.logspace(-2, 0, num = n_fg_class)
+    # mr is a list of len(n_fg_classes) with np arrays at each idx
+    for i in range(len(mr)):
+        t = mr[i].shape[0]
+        fppi[i] = np.logspace(-2, 0, num = t)
     return mr, fppi

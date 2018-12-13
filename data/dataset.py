@@ -98,9 +98,9 @@ class Transform(object):
 
 
 class Dataset:
-    def __init__(self, opt):
+    def __init__(self, opt, set_id=None, split='train'):
         self.opt = opt
-        self.db = CaltechBboxDataset(opt.voc_data_dir)
+        self.db = CaltechBboxDataset(opt.voc_data_dir, set_id=set_id, split=split)
         # self.db = VOCBboxDataset(opt.voc_data_dir)
         self.tsf = Transform(opt.min_size, opt.max_size)
 
@@ -117,10 +117,9 @@ class Dataset:
 
 
 class TestDataset:
-    def __init__(self, opt, split='test', use_difficult=True):
+    def __init__(self, opt, set_id=None, split='test'):
         self.opt = opt
-        self.db = CaltechBboxDataset(opt.voc_data_dir, split=split, set_id='set06')
-        # self.db = VOCBboxDataset(opt.voc_data_dir, split=split, use_difficult=use_difficult)
+        self.db = CaltechBboxDataset(opt.voc_data_dir, set_id=set_id, split=split)
 
     def __getitem__(self, idx):
         ori_img, bbox, label = self.db.get_example(idx)

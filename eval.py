@@ -48,25 +48,18 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--path")
+    parser.add_argument("-s", "--set_id")
     args = parser.parse_args()
     
-    valset = TestDataset(opt,split='val')
+    valset = TestDataset(opt, set_id=args.set_id, split='val')
     val_dataloader = data_.DataLoader(valset,
                                 batch_size=1,
                                 num_workers=opt.test_num_workers,
                                 shuffle=False,
                                 pin_memory=True
                                 )
-    
-    testset = TestDataset(opt, split='test')
-    test_dataloader = data_.DataLoader(testset,
-                                    batch_size=1,
-                                    num_workers=opt.test_num_workers,
-                                    shuffle=False,
-                                    pin_memory=True
-                                    )
-    
-    print(f"VAL SET: {len(val_dataloader)} | TEST SET: {len(test_dataloader)}")
+
+    print(f"VAL SET: {len(val_dataloader)} ")
     print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
@@ -85,21 +78,12 @@ def main():
 
         eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        log_info = 'lr:{}, map:{},loss:{},lamr:{}'.format(str(lr_),
+        log_info = 'lr:{}, loss:{},map:{},lamr:{}'.format(str(lr_),
                                                   str(trainer.get_meter_data()),
                                                   str(eval_result['map']),
                                                   str(eval_result['lamr']))
         print("Evaluation Results on Validation Set: ")
         print(log_info)
-        print("\n")
-
-        test_eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
-        test_lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        test_log_info = 'lr:{}, map:{}, lamr:{}'.format(str(test_lr_),
-                                                                str(test_eval_result['map']),
-                                                                str(test_eval_result['lamr']))
-        print("Evaluation Results on Test Set of size 1000: ")
-        print(test_log_info)
         print("\n\n")
     else:
         print("No checkpoint to evaluate is specified")

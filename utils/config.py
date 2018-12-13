@@ -9,17 +9,17 @@ class Config:
     # data
     mask_lin = True
     mask_conv = False
-    voc_data_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset/1'
+    voc_data_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
-    num_workers = 8
-    test_num_workers = 8
+    num_workers = 4
+    test_num_workers = 4
 
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
     roi_sigma = 1.
     mask = True
-    use_simple = True
+    use_simple = False
     # param for optimizer
     # 0.0005 in origin paper but 0.0001 in tf-faster-rcnn
     weight_decay = 0.0005
@@ -48,8 +48,8 @@ class Config:
 
     test_num = 10000
     # model
-    load_path ='/data6/lekevin/fast_track/jeanette/Fast-Pedestrian-Tracking/checkpoints/pretrained_simple_fast.pth'
-    #load_path = None
+    #load_path ='/data6/lekevin/fast_track/jeanette/Fast-Pedestrian-Tracking/checkpoints/pretrained_simple_fast.pth'
+    load_path = None
 
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
