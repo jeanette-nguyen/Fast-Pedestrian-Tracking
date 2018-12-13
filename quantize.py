@@ -38,6 +38,10 @@ def main():
                 print("Weights are already sparse")
                 return
     print("\n\n=========SIZE BEFORE=============")
+    try:
+        trainer.faster_rcnn.set_pruned()
+    except:
+        print("No masks.")
     get_size(trainer)
     trainer.quantize(bits=args.bits, verbose=args.verbose)
     print("\n\n=========SIZE AFTER==============")
