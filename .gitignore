@@ -16,3 +16,4 @@ tools/logs/*
 nohup.out
 visdom.out
 tools/.ipynb_checkpoints/*
+.vscode
