@@ -1,3 +1,4 @@
+import os
 from pprint import pprint
 
 
@@ -9,7 +10,7 @@ class Config:
     # data
     mask_lin = True
     mask_conv = False
-    voc_data_dir = 'dataset'
+    voc_data_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset/1'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 4
@@ -27,7 +28,7 @@ class Config:
     lr = 1e-3
 
     # visualization
-    env = 'faster-rcnn'  # visdom env
+    env = 'faster_rcnn'  # visdom env
     port = 8097
     plot_every = 40  # vis every N iter
 
@@ -45,6 +46,7 @@ class Config:
     test_num = 10000
     # model
     load_path = None
+    model_name = 'test_run'
 
     # benchmark
     benchmark_path = None
@@ -79,3 +81,4 @@ class Config:
 
 opt = Config()
 assert opt.mask_conv == False, "Only supports pruning FC layers now"
+assert os.path.exists(opt.voc_data_dir)
