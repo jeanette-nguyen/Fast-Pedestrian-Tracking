@@ -17,7 +17,8 @@ install other dependencies: pip install -r requirements.txt
 
 Optional, but strongly recommended: build cython code nms_gpu_post:
 cd model/utils/nms/
+
 python build.py build_ext --inplace
-cd -
+
 
 # Code Organization
