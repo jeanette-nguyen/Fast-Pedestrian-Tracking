@@ -5,7 +5,6 @@ core/*.pyc
 tools/*.pyc
 tools/logs/*
 tests/*
-dataset/*
 checkpoints/*
 utils/*.pyc
 .ipynb_checkpoints/*
