@@ -11,6 +11,9 @@ class Col():
     FRAME = 'frame'
     COORD = 'coordinates'
     N_LABELS = 'n_labels'
+    OCCL = 'occl'
+    HIDE = 'hide'
+    LOCK = 'lock'
     VALID = 'valid'
     PHASE = 'phase'
 
