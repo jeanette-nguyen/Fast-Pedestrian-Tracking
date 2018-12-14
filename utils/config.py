@@ -1,3 +1,4 @@
+import os
 from pprint import pprint
 
 
@@ -12,8 +13,8 @@ class Config:
     voc_data_dir = 'dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
-    num_workers = 8
-    test_num_workers = 8
+    num_workers = 4
+    test_num_workers = 4
 
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
@@ -26,9 +27,8 @@ class Config:
     lr_decay = 0.1  # 1e-3 -> 1e-4
     lr = 1e-3
 
-
     # visualization
-    env = 'faster-rcnn-prune'  # visdom env
+    env = 'faster_rcnn'  # visdom env
     port = 8097
     plot_every = 40  # vis every N iter
 
@@ -37,15 +37,12 @@ class Config:
     pretrained_model = 'vgg16'
 
     # training
-    epoch = 3
-
-
+    epoch = 14
     use_adam = False # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
     # debug
     debug_file = '/tmp/debugf'
-
     test_num = 10000
     # model
     load_path = None
@@ -58,6 +55,7 @@ class Config:
     sparse_dense = False
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
+
 
     def _parse(self, kwargs):
         state_dict = self._state_dict()

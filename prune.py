@@ -2,8 +2,7 @@ from __future__ import  absolute_import
 # though cupy is not used but without this line, it raise errors...
 import cupy as cp
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 
 import ipdb
 import matplotlib.pyplot as plt
@@ -35,6 +34,7 @@ args = parser.parse_args()
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (2048, rlimit[1]))
 
+
 def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
     trainer.train()
     for epoch in range(opt.epoch):
@@ -42,7 +42,6 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for ii, (img, bbox_, label_, scale) in pbar:
             scale = at.scalar(scale)
-
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             losses = trainer.train_step(img, bbox, label, scale, prune_train=True)
             if ii % 100 == 0:

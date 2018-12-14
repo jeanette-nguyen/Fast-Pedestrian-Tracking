@@ -54,7 +54,6 @@ class FasterRCNNVGG16(FasterRCNN):
                  anchor_scales=[8, 16, 32],
                  mask=False
                  ):
-                 
         extractor, classifier = decom_vgg16(opt.mask_lin or opt.mask_conv)
 
         rpn = RegionProposalNetwork(

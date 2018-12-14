@@ -12,9 +12,9 @@ from matplotlib import pyplot as plot
 
 
 CALTECH_BBOX_LABEL_NAMES = (
-    '0',
     'person',
     'people',
+    'person?',
     'person-fa',
 )
 

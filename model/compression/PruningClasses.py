@@ -211,11 +211,11 @@ class SparseDenseLinear(Linear):
                 return torch.mm(self.weight, input) + self.bias.view(self.out_features, -1)
         else:
             return F.linear(input, self.weight, self.bias)
-
+    
     @property
     def sparse(self):
         return self._sparse
-
+    
     @sparse.setter
     def sparse(self, value):
         if value and not self._sparse:

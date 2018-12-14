@@ -1,6 +1,7 @@
 visdom
 torchvision
 scikit-image
+scikit-learn
 tqdm
 fire
 pprint

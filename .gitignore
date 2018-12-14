@@ -3,11 +3,20 @@ data/*.log
 *.pyc
 core/*.pyc
 tools/*.pyc
+tools/logs/*
 tests/*
-dataset/*
 checkpoints/*
 utils/*.pyc
 .ipynb_checkpoints/*
 go.py
 .DS_Store
-# TESTING
+./demo_test_thomas.ipynb
+set_exp_01/*
+tools/logs/*
+.nfs000000001b69d49c00000363
+nohup.out
+visdom.out
+tools/.ipynb_checkpoints/*
+go.py
+.DS_Store
+.vscode

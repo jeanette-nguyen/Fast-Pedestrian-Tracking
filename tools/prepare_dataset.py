@@ -45,8 +45,10 @@ def parse_cmds():
 def main():
     args = parse_cmds()
     if DEBUG:
-        dest_dir = os.path.join(os.path.abspath(os.pardir), 'data')
-        src_dir = '/Users/ktl014/PycharmProjects/ece285/caltech-pedestrian-dataset-converter'
+        # dest_dir = os.path.join(os.path.abspath(os.pardir), 'data')
+        dest_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset'
+        src_dir = '/data6/lekevin/fast_track/caltech-pedestrian-dataset' \
+                  '-converter'
     else:
         dest_dir = args.path
         src_dir = args.data_dir
