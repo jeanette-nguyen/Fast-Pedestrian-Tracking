@@ -111,7 +111,7 @@ quantize.py - Quantizes the model weights
 
 requirements.txt - Requirements that must be installed for the model to run
 
-train.ipynb - 
+train.ipynb - Notebook to rerun the training if need be
 
 train.py - Run the code to train our Faster RCNN model
 
