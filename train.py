@@ -3,7 +3,7 @@ from __future__ import  absolute_import
 import cupy as cp
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import ipdb
 import matplotlib.pyplot as plt
