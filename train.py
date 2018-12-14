@@ -3,7 +3,7 @@ from __future__ import  absolute_import
 import cupy as cp
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "8"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 import ipdb
 import matplotlib.pyplot as plt
@@ -106,7 +106,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                                                           False).float())
                 except:
                     print("Cannot display images")
-            if (ii + 1) % 500 == 0:
+            if (ii + 1) % 250 == 0:
                 eval_result = eval(test_dataloader, faster_rcnn, test_num=250)
                 trainer.vis.plot('val_map', eval_result['map'])
                 log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(
