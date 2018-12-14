@@ -47,6 +47,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 
 def train(opt, faster_rcnn, dataloader,  val_dataloader,
           test_dataloader, trainer, lr_, best_map, start_epoch):
+    trainer.train()
     for epoch in range(start_epoch, start_epoch+opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))

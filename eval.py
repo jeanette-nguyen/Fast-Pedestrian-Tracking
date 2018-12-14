@@ -81,7 +81,7 @@ def main():
         checkpoint = torch.load(args.path)['other_info']
         best_map = checkpoint['best_map']
         trainer.load(args.path)
-        
+        trainer.eval()
         # if using simple-fast pretrained network, no epoch # saved
         # if args.path == :
         #     checkpoint['epoch'] = 0
