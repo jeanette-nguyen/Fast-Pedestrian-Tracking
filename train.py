@@ -107,7 +107,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                 except:
                     print("Cannot display images")
             if (ii + 1) % 250 == 0:
-                eval_result = eval(test_dataloader, faster_rcnn, test_num=250)
+                eval_result = eval(test_dataloader, faster_rcnn, test_num=100)
                 trainer.vis.plot('val_map', eval_result['map'])
                 log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(
                     eval_result['map']), str(trainer.get_meter_data()))
