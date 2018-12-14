@@ -252,6 +252,50 @@ class FasterRCNNTrainer(nn.Module):
             curr_model_kvpair[k] = weights
             count += 1
         return curr_model_kvpair
+
+
+    def generate_state_dict(self, pre_trained, simple=False, debug=False):
+        self.set_dense()
+        if simple:
+            return self.generate_simple_state_dict(pre_trained, debug)
+        new = list(pre_trained.items())
+        curr_model_kvpair = self.faster_rcnn.state_dict()
+        if debug:
+            for k, v in curr_model_kvpair.items():
+                print("curr :", str(k))
+            for i in new:
+                print("new :", str(i[0]))
+        for k, v in new:
+            if k in curr_model_kvpair:
+                curr_model_kvpair[k] = v
+            else:
+                print(f"Key Weight Mismatch at: {str(k)} -- Not Loading")
+        return curr_model_kvpair
+
+
+    def to_sparse(self, sparse_mx, n, m):
+        print(f"Turning Sparse: {n}: {m}")
+        sparse_mx = sparse_mx.tocoo().astype(np.float32)
+        indices = t.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col))).long()
+        values = t.from_numpy(sparse_mx.data)
+        shape = t.Size(sparse_mx.shape)
+        return t.sparse.FloatTensor(indices, values, shape)
+
+    def revert_to_sparse(self, sparse_list):
+        self.sparse = True
+        for n, m in self.named_modules():
+            if str(m) in sparse_list:
+                m.sparse = True
+                if hasattr(m, 'weight') and not m.weight.is_sparse:
+                    try:
+                        dev = m.weight.device
+                        weight = m.weight.data.cpu().numpy()
+                        matrix = coo_matrix(weight)
+                        tensor = self.to_sparse(matrix, n, str(m))
+                        m.weight.data = tensor.to(dev)
+                    except:
+                        raise ValueError(f"Couldn't convert {n},{str(m)} to sparse")
+        return self
     
 
     def generate_state_dict(self, pre_trained, simple=False, debug=False):
@@ -340,7 +384,7 @@ class FasterRCNNTrainer(nn.Module):
     def set_sparse(self):
         self.sparse = True
         self.faster_rcnn.set_sparse()
-    
+
     def set_dense(self):
         self.sparse = False
         self.faster_rcnn.set_dense()
