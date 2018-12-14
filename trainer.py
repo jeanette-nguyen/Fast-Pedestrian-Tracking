@@ -12,6 +12,10 @@ from utils.vis_tool import Visualizer
 import pprint
 from utils.config import opt
 from torchnet.meter import ConfusionMeter, AverageValueMeter
+from scipy.sparse import coo_matrix
+from model.compression import quantization
+import numpy as np
+
 
 LossTuple = namedtuple('LossTuple',
                        ['rpn_loc_loss',
@@ -194,12 +198,21 @@ class FasterRCNNTrainer(nn.Module):
             save_path(str): the path to save models.
         """
         save_dict = dict()
+        save_dict['sparse_list'] = []
+        if self.sparse:
+            for n, m in self.named_modules():
+                if hasattr(m, "sparse"):
+                    if m.sparse and hasattr(m, 'weight'):
+                        w_dev = m.weight.device
+                        w = m.weight.data.coalesce().to_dense()
+                        m.weight.data = w.to(w_dev)
+                    save_dict['sparse_list'].append(str(m))
 
         save_dict['model'] = self.faster_rcnn.state_dict()
         save_dict['config'] = opt._state_dict()
         save_dict['other_info'] = kwargs
         save_dict['vis_info'] = self.vis.state_dict()
-
+        save_dict['sparse'] = self.sparse
         if save_optimizer:
             save_dict['optimizer'] = self.optimizer.state_dict()
 
