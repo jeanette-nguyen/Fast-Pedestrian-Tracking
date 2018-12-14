@@ -2,8 +2,8 @@ from __future__ import  absolute_import
 # though cupy is not used but without this line, it raise errors...
 import cupy as cp
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import ipdb
 import matplotlib.pyplot as plt
@@ -65,6 +65,20 @@ def train(opt, faster_rcnn, dataloader,  val_dataloader,
                 roicls = losses[3].cpu().data.numpy()
                 tot = losses[4].cpu().data.numpy()
                 pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}")
+            
+            if (ii+1) % 1000 == 0:
+                eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
+                trainer.vis.plot('val_map', eval_result['map'])
+                lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
+                val_log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
+                                                   str(eval_result['map']),
+                                                        str(trainer.get_meter_data()))
+                trainer.vis.log(val_log_info)
+                print("Evaluation Results on Val Set ")
+                print(val_log_info)
+                print("\n\n")
+
+
             if (ii + 1) % 100 == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
