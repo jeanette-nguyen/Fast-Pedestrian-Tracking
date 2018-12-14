@@ -2,8 +2,6 @@ from __future__ import  absolute_import
 # though cupy is not used but without this line, it raise errors...
 import cupy as cp
 import os
-#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import ipdb
 import matplotlib.pyplot as plt
@@ -56,7 +54,7 @@ def train(opt, faster_rcnn, dataloader,  val_dataloader,
 #             bbox_tmp = bbox_.clone()
 #             bbox_ = transform_bbox(bbox_)
             scale = at.scalar(scale)
-            
+
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             losses = trainer.train_step(img, bbox, label, scale)
             if ii % 100 == 0:
@@ -113,19 +111,27 @@ def train(opt, faster_rcnn, dataloader,  val_dataloader,
                                                           False).float())
                 except:
                     print("Cannot display images")
+            if (ii + 1) % 100 == 0:
+                eval_result = eval(val_dataloader, faster_rcnn, test_num=25)
+                trainer.vis.plot('val_map', eval_result['map'])
+                log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(
+                    eval_result['map']), str(trainer.get_meter_data()))
+                trainer.vis.log(log_info)
+
 
         # Save after every epoch
-        epoch_path = trainer.save(epoch, best_map=0, model_name=opt.model_name)
+        epoch_path = trainer.save(epoch, best_map=0)
                 
-        eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
-        trainer.vis.plot('val_map', eval_result['map'])
+        eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
+        trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        val_log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
+        test_log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
                                                    str(eval_result['map']),
                                                         str(trainer.get_meter_data()))
-        trainer.vis.log(val_log_info)
-        print("Evaluation Results on Val Set ")
-        print(val_log_info)
+
+        trainer.vis.log(test_log_info)
+        print("Evaluation Results on Test Set ")
+        print(test_log_info)
         print("\n\n")
 
         if eval_result['map'] > best_map:
@@ -139,16 +145,6 @@ def train(opt, faster_rcnn, dataloader,  val_dataloader,
 
         if epoch == 13: 
             break
-
-        test_eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
-        trainer.vis.plot('test_map', test_eval_result['map'])
-        test_lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        test_log_info = 'lr:{}, map:{}'.format(str(test_lr_),
-                                               str(test_eval_result['map']))
-        print("Evaluation Results on Test Set (first 10000): ")
-        trainer.vis.log(test_log_info)
-        print(test_log_info)
-        print("\n\n")
 
 
 def main():

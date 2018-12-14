@@ -11,7 +11,6 @@ from .util import read_image
 from utils.constants import *
 
 # Module level constants
-#CLS_IDX = {'0': 3, 'person': 0, 'people':1, 'person?':2, 'person-fa':0}
 CLS_IDX = {'person': 0, 'people':1, 'person?':2, 'person-fa':0}
 #img_dir = '/data6/lekevin/fast_track/caltech-pedestrian-dataset-converter' \
 #          '/data/images/'

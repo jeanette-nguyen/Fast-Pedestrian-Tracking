@@ -320,7 +320,7 @@ class FasterRCNN(nn.Module):
                 threshold = np.std(module.weight.data.cpu().numpy()) * s
                 print(f"Pruning with threshold : {threshold} for layer{name}")
                 module.prune(threshold)
-                
+
     def set_pruned(self):
         """
         Call this function only after pruning and retraining after pruning

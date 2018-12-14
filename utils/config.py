@@ -38,15 +38,19 @@ class Config:
 
     # training
     epoch = 14
-    use_adam = True # Use Adam optimizer
+    use_adam = False # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
     # debug
     debug_file = '/tmp/debugf'
     test_num = 10000
     # model
+<<<<<<< HEAD
     load_path = None#'/datasets/home/98/898/cjgunthe/Fast-Pedestrian-Tracking/checkpoints/fasterrcnn_12131543_0_test_run'
     model_name = 'test_run'
+=======
+    load_path = None
+>>>>>>> 35544e1a501a16254cb8ecfd78b4db4d33ae4ade
 
     # benchmark
     benchmark_path = None
@@ -68,12 +72,12 @@ class Config:
         print('======user config========')
         pprint(self._state_dict())
         print('==========end============')
-    
+
     def _parse_all(self):
         print('======user config========')
         pprint(self._state_dict())
         print('==========end============')
-    
+
     def _state_dict(self):
         return {k: getattr(self, k) for k, _ in Config.__dict__.items() \
                 if not k.startswith('_')}
