@@ -13,71 +13,48 @@ from utils.config import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
 from model.faster_rcnn_vgg16 import FasterRCNNVGG16
 from torch.utils import data as data_
+import torch
 from trainer import FasterRCNNTrainer
 from utils import array_tool as at
 from utils.vis_tool import visdom_bbox
 from utils.eval_tool import eval_detection_voc
-
-# fix for ulimit
-# https://github.com/pytorch/pytorch/issues/973#issuecomment-346405667
 import resource
+from model.compression import prune_utils
+from train import eval
+import argparse
+
+parser = argparse.ArgumentParser(description="Arguments for prune.py")
+parser.add_argument("--prune_by_std", "-std", default=True, 
+                    action="store_false", help="Pruning method. Defaults to prune by standard deviation")
+parser.add_argument("--sensitivity", "-s", type=float, default=0.25, help="Number of standard devs to scale")
+parser.add_argument("--percentile", "-p", type=float, default=5.0, help="Perecentage of weights ot prune")
+parser.add_argument("--save_path", "-sp", type=str, default="./checkpoints/final_pruned.model", help="final save path after pruning")
+args = parser.parse_args()
+
 
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (2048, rlimit[1]))
 
-def transform_bbox(bbox_):
-    """
-    Transforms caltech pedestrian bbox to same format as VOC
-    Args:
-        bbox_: tensor of {x_min, y_min, width, height}
-    Returns:
-        bbox_: tensor of {y_min, x_min, y_max, x_max}
-    """
-    bbox_[:, :, 2] += bbox_[:, :, 0]
-    bbox_[:, :, 3] += bbox_[:, :, 1]
-    bbox_[:, :, 0], bbox_[:, :, 1] = bbox_[:, :, 1], bbox_[:, :, 0]
-    bbox_[:, :, 2], bbox_[:, :, 3] = bbox_[:, :, 3], bbox_[:, :, 2]
-    return bbox_
-
-def eval(dataloader, faster_rcnn, test_num=10000):
-    print("\nEVAL")
-    pred_bboxes, pred_labels, pred_scores = list(), list(), list()
-    gt_bboxes, gt_labels = list(), list()
-    for ii, (imgs, sizes, gt_bboxes_, gt_labels_) in tqdm(enumerate(dataloader)):
-        sizes = [sizes[0][0].item(), sizes[1][0].item()]
-        pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(imgs, [sizes])
-        gt_bboxes += list(gt_bboxes_.numpy())
-        gt_labels += list(gt_labels_.numpy())
-        pred_bboxes += pred_bboxes_
-        pred_labels += pred_labels_
-        pred_scores += pred_scores_
-        if ii == test_num: break
-
-    result = eval_detection_voc(
-        pred_bboxes, pred_labels, pred_scores,
-        gt_bboxes, gt_labels, use_07_metric=True)
-    return result
-
 def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
+    trainer.train()
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for ii, (img, bbox_, label_, scale) in pbar:
-            # Currently configured to predict (y_min, x_min, y_max, x_max)
-#             bbox_tmp = bbox_.clone()
-#             bbox_ = transform_bbox(bbox_)
             scale = at.scalar(scale)
 
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
-            losses = trainer.train_step(img, bbox, label, scale)
+            losses = trainer.train_step(img, bbox, label, scale, prune_train=True)
             if ii % 100 == 0:
                 rpnloc = losses[0].cpu().data.numpy()
                 rpncls = losses[1].cpu().data.numpy()
                 roiloc = losses[2].cpu().data.numpy()
                 roicls = losses[3].cpu().data.numpy()
                 tot = losses[4].cpu().data.numpy()
-                pbar.set_description(f"Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f} | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f} | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}")
-            if (ii + 1) % 100 == 0:
+                pbar.set_description(f"""Epoch: {epoch} | Batch: {ii} | RPNLoc Loss: {rpnloc:.4f}"""
+                                    f""" | RPNclc Loss: {rpncls:.4f} | ROIloc Loss: {roiloc:.4f}"""
+                                    f""" | ROIclc Loss: {roicls:.4f} | Total Loss: {tot:.4f}""")
+            if (ii + 1) % 1000 == 0:
                 # plot loss
                 trainer.vis.plot_many(trainer.get_meter_data())
                 print(trainer.get_meter_data())
@@ -106,7 +83,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
                                                           False).float())
                 except:
                     print("Cannot display images")
-            if (ii + 1) % 100 == 0:
+            if (ii + 1) % 2000 == 0:
                 eval_result = eval(test_dataloader, faster_rcnn, test_num=25)
                 trainer.vis.plot('val_map', eval_result['map'])
                 log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(
@@ -117,7 +94,7 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         # Save after every epoch
         epoch_path = trainer.save(epoch, best_map=0)
                 
-        eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
+        eval_result = eval(test_dataloader, faster_rcnn, test_num=25)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
@@ -126,19 +103,17 @@ def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
         print("Evaluation Results: ")
         print(log_info)
         print("\n\n")
-        
-        if eval_result['map'] > best_map:
-            best_map = eval_result['map']
-            best_path = epoch_path
 
+        #if eval_result['map'] > best_map:
+        best_map = eval_result['map']
+        best_path = trainer.save(best_map=best_map, prune=True)
         if epoch == 9:
             trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(opt.lr_decay)
             lr_ = lr_ * opt.lr_decay
 
-        if epoch == 13: 
+        if epoch == 13:
             break
-
 
 def main():
     dataset = Dataset(opt)
@@ -154,15 +129,32 @@ def main():
                                     shuffle=False, \
                                     pin_memory=True
                                     )
+
     print(f"TRAIN SET: {len(dataloader)} | TEST SET: {len(test_dataloader)}")
-    print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     best_map = 0
     lr_ = opt.lr
-    train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
 
+    if opt.load_path:
+        assert os.path.isfile(opt.load_path), 'Checkpoint {} does not exist.'.format(opt.load_path)
+        checkpoint = torch.load(opt.load_path)['other_info']
+        trainer.load(opt.load_path)
+        print("="*30+"   Checkpoint   "+"="*30)
+        print("Loaded checkpoint '{}' (epoch {})".format(opt.load_path, 1)) #no saved epoch, put in 1 for now
+        if args.prune_by_std:
+            trainer.faster_rcnn.prune_by_std(args.sensitivity)
+        else:
+            trainer.faster_rcnn.prune_by_percentile(q=args.percentile)
+        prune_utils.print_nonzeros(trainer.faster_rcnn)
+        train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map)
+
+        trainer.faster_rcnn.set_pruned()
+        trainer.save(save_path=args.save_path)
+    else:
+        print("Must specify load path to pretrained model")
+    
 
 if __name__ == "__main__":
     print(opt)

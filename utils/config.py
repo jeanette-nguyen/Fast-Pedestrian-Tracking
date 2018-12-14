@@ -28,7 +28,7 @@ class Config:
 
 
     # visualization
-    env = 'faster-rcnn-testing-set00-B'  # visdom env
+    env = 'faster-rcnn-prune'  # visdom env
     port = 8097
     plot_every = 40  # vis every N iter
 
@@ -37,7 +37,7 @@ class Config:
     pretrained_model = 'vgg16'
 
     # training
-    epoch = 14
+    epoch = 3
 
 
     use_adam = False # Use Adam optimizer
@@ -70,9 +70,16 @@ class Config:
         pprint(self._state_dict())
         print('==========end============')
 
+    def _parse_all(self):
+        print('======user config========')
+        pprint(self._state_dict())
+        print('==========end============')
+
     def _state_dict(self):
         return {k: getattr(self, k) for k, _ in Config.__dict__.items() \
                 if not k.startswith('_')}
 
 
 opt = Config()
+assert opt.mask_conv == False, "Only supports pruning FC layers now"
+assert os.path.exists(opt.voc_data_dir)

@@ -65,6 +65,7 @@ class FasterRCNNTrainer(nn.Module):
         self.rpn_cm = ConfusionMeter(2)
         self.roi_cm = ConfusionMeter(4)#ConfusionMeter(21)
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}  # average loss
+        self.sparse = False
 
     def forward(self, imgs, bboxes, labels, scale):
         """Forward Faster R-CNN and calculate losses.
@@ -185,7 +186,7 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses
 
-    def save(self, save_optimizer=False, save_path=None, **kwargs):
+    def save(self, save_optimizer=False, save_path=None, prune=False, **kwargs):
         """serialize models include optimizer and other info
         return path where the model-file is stored.
 
@@ -221,6 +222,8 @@ class FasterRCNNTrainer(nn.Module):
             save_path = 'checkpoints/fasterrcnn_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
+        if prune:
+            save_path += "_prune"
 
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
@@ -230,7 +233,7 @@ class FasterRCNNTrainer(nn.Module):
         self.vis.save([self.vis.env])
         return save_path
     
-    def generate_state_dict(self, pre_trained, simple=False, debug=False):
+    def generate_simple_state_dict(self, pre_trained, debug=False):
         new = list(pre_trained.items())
         curr_model_kvpair = self.faster_rcnn.state_dict()
         if debug:
@@ -242,14 +245,33 @@ class FasterRCNNTrainer(nn.Module):
         for k, v in curr_model_kvpair.items():
             if "mask" in k:
                 continue
-            if not simple:
-                if "head.cls_loc" in str(k) or "head.score" in str(k):
-                    count += 1
-                    continue
-            layer_name, weights = new[count]
+            if "head.cls_loc" in str(k) or "head.score" in str(k):
+                count += 1
+                continue
+            _, weights = new[count]
             curr_model_kvpair[k] = weights
             count += 1
         return curr_model_kvpair
+
+
+    def generate_state_dict(self, pre_trained, simple=False, debug=False):
+        self.set_dense()
+        if simple:
+            return self.generate_simple_state_dict(pre_trained, debug)
+        new = list(pre_trained.items())
+        curr_model_kvpair = self.faster_rcnn.state_dict()
+        if debug:
+            for k, v in curr_model_kvpair.items():
+                print("curr :", str(k))
+            for i in new:
+                print("new :", str(i[0]))
+        for k, v in new:
+            if k in curr_model_kvpair:
+                curr_model_kvpair[k] = v
+            else:
+                print(f"Key Weight Mismatch at: {str(k)} -- Not Loading")
+        return curr_model_kvpair
+
 
     def to_sparse(self, sparse_mx, n, m):
         print(f"Turning Sparse: {n}: {m}")
