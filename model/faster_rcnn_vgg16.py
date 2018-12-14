@@ -11,15 +11,7 @@ from model.compression.vgg16 import vgg16
 
 def decom_vgg16(mask):
     # the 30th layer of features is relu of conv5_3
-    if not mask:
-        if opt.caffe_pretrain:
-            model = vgg16_torch(pretrained=False)
-            if not opt.load_path:
-                model.load_state_dict(t.load(opt.caffe_pretrain_path))
-        else:
-            model = vgg16(not opt.load_path)
-    else:
-        model = vgg16(pretrained=True, mask_lin=opt.mask_lin, mask_conv=opt.mask_conv)
+    model = vgg16(pretrained=True, mask_lin=opt.mask_lin, mask_conv=opt.mask_conv)
     features = list(model.features)[:30]
     classifier = model.classifier
 
@@ -111,7 +103,7 @@ class VGG16RoIHead(nn.Module):
 
         normal_init(self.cls_loc, 0, 0.001)
         normal_init(self.score, 0, 0.01)
-
+        self.sparse = False
         self.n_class = n_class
         self.roi_size = roi_size
         self.spatial_scale = spatial_scale
@@ -144,7 +136,11 @@ class VGG16RoIHead(nn.Module):
 
         pool = self.roi(x, indices_and_rois)
         pool = pool.view(pool.size(0), -1)
+        if self.sparse:
+            pool = pool.t()
         fc7 = self.classifier(pool)
+        if self.sparse:
+            fc7 = fc7.t()
         roi_cls_locs = self.cls_loc(fc7)
         roi_scores = self.score(fc7)
         return roi_cls_locs, roi_scores
