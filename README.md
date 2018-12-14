@@ -103,6 +103,8 @@ utils/
 
 __init__.py - Faster RCNN init
 
+demo.ipynb - Demo of our evaluation to detect some pedestrians
+
 eval.py - Evaluate our model's MAP
 
 prune.py - Trains a model with pruned weights
