@@ -131,4 +131,5 @@ To prepare the dataset, run prepare_dataset.py in the tools directory:
 Output for example run:
 `$ python prepare_dataset.py --path=../data --data-dir=/datasets/ee285f-public/caltech_pedestrians_usa/`
 
-
+# Data
+Download the pretrained weights from our model [here](https://drive.google.com/open?id=1S2McCJo-od-BvVDGaOw8_NICjJvF9rDe).
