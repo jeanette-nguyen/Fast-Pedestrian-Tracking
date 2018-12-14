@@ -7,9 +7,11 @@ import numpy as np
 import torch
 from torch.nn import Parameter
 from torch.nn.modules.module import Module
+from torch.nn.modules.linear import Linear
+from scipy.sparse import coo_matrix
 
 class PruningModule(Module):
-    def prune_by_percentile(self, q=5.0, **kwargs):
+    def prune_by_percentile(self, q=5.0, debug=False, **kwargs):
         """
         Prunes based off of percentile
         """
@@ -24,8 +26,10 @@ class PruningModule(Module):
         all_alive = np.concatenate(al_parameters)
         percentile_value = np.percentile(abs(all_alive), q)
         print(f"Pruning with Threshold: {percentile_value}")
-        for name, module in self.named_modules():
-            if name in ['fc1', 'fc2', 'fc3']:
+        for i, (name, module) in enumerate(self.named_modules()):
+            if 'Masked' in str(module) and 'Sequential' not in str(module) and name:
+                if debug:
+                    print("Pruning : ", str(name))
                 module.prune(threshold=percentile_value)
 
     def prune_by_std(self, s=0.25, debug=False, batch_norm=False):
@@ -73,6 +77,7 @@ class MaskedLinear(Module):
             self.bias = Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
+        self.sparse = False
         self.reset_params()
 
     def reset_params(self):
