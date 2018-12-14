@@ -117,10 +117,9 @@ class Dataset:
 
 
 class TestDataset:
-    def __init__(self, opt, split='test', use_difficult=True):
+    def __init__(self, opt, set_id='set00', split='test', use_difficult=True):
         self.opt = opt
-        self.db = CaltechBboxDataset(opt.voc_data_dir, split=split, set_id='set06')
-        # self.db = VOCBboxDataset(opt.voc_data_dir, split=split, use_difficult=use_difficult)
+        self.db = CaltechBboxDataset(opt.voc_data_dir, split=split, set_id=set_id)
 
     def __getitem__(self, idx):
         ori_img, bbox, label = self.db.get_example(idx)

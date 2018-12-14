@@ -34,6 +34,7 @@ rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (20480, rlimit[1]))
 
 def train(opt, faster_rcnn, dataloader, test_dataloader, trainer, lr_, best_map):
+    trainer.train()
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))

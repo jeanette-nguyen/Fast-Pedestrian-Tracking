@@ -1,0 +1,65 @@
+Logger initialized @ 2018-12-13 14:51:32.669290
+==============================   Generate Dataset   ==============================
+
+Total images retrieved: 227645
+Loaded annotations. Number of frames w/out annotations
+images              0
+valid               0
+set                 0
+video               0
+frame               0
+coordinates    101920
+label               0
+n_labels            0
+occl                0
+hide                0
+lock                0
+dtype: int64
+Total annotations: 337819
+Dataset size: (227645, 11)
+==============================   Image per video distribution   ==============================
+V000    18153
+V001    18505
+V002    17798
+V003    17041
+V004    18813
+V005    19012
+V006    16660
+V007    16664
+V008    16437
+V009    16274
+V010    16270
+V011    14284
+V012     7084
+V013     3532
+V014     3752
+V015     1842
+V016     1841
+V017     1841
+V018     1842
+Name: video, dtype: int64
+==============================   Videos per set distribution   ==============================
+set00 [15 videos / 25693 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011', 'V012', 'V013', 'V014']
+
+set01 [6 videos / 10864 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005']
+
+set03 [13 videos / 23944 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011', 'V012']
+
+set04 [12 videos / 21995 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011']
+
+set05 [13 videos / 23684 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011', 'V012']
+
+set06 [19 videos / 34855 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011', 'V012', 'V013', 'V014', 'V015', 'V016', 'V017', 'V018']
+
+set07 [12 videos / 22525 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011']
+
+set08 [11 videos / 19822 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010']
+
+set09 [12 videos / 22274 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011']
+
+set10 [12 videos / 21989 images]: ['V000', 'V001', 'V002', 'V003', 'V004', 'V005', 'V006', 'V007', 'V008', 'V009', 'V010', 'V011']
+
+Saving datasets (train/val/test) to dir: ../dataset2
+train size: (95564, 12)
+val size: (10616, 12)
+test size: (121465, 12)

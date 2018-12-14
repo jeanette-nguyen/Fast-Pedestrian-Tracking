@@ -10,7 +10,7 @@ class Config:
     # data
     mask_lin = True
     mask_conv = False
-    voc_data_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset/1'
+    voc_data_dir = '/datasets/home/98/898/cjgunthe/Fast-Pedestrian-Tracking/dataset2/'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 4
@@ -45,7 +45,7 @@ class Config:
     debug_file = '/tmp/debugf'
     test_num = 10000
     # model
-    load_path = None
+    load_path = None#'/datasets/home/98/898/cjgunthe/Fast-Pedestrian-Tracking/checkpoints/fasterrcnn_12131543_0_test_run'
     model_name = 'test_run'
 
     # benchmark

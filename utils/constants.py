@@ -13,6 +13,9 @@ class Col():
     N_LABELS = 'n_labels'
     VALID = 'valid'
     PHASE = 'phase'
+    OCCL = 'occl'
+    HIDE = 'hide'
+    LOCK = 'lock'
 
 class Bat():
     IMG = 'images'

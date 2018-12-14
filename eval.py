@@ -50,25 +50,18 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--path")
+    parser.add_argument("-s", "--set_id")
     args = parser.parse_args()
     
-    valset = TestDataset(opt,split='val')
+    valset = TestDataset(opt, set_id=args.set_id, split='val')
     val_dataloader = data_.DataLoader(valset,
                                 batch_size=1,
                                 num_workers=opt.test_num_workers,
-                                shuffle=True,
+                                shuffle=False,
                                 pin_memory=True
                                 )
-    
-    testset = TestDataset(opt, split='test')
-    test_dataloader = data_.DataLoader(testset,
-                                    batch_size=1,
-                                    num_workers=opt.test_num_workers,
-                                    shuffle=False,
-                                    pin_memory=True
-                                    )
-    
-    print(f"VAL SET: {len(val_dataloader)} | TEST SET: {len(test_dataloader)}")
+
+    print(f"VAL SET: {len(val_dataloader)} ")
     print("Using Mask VGG") if opt.mask else print("Using normal VGG16")
     faster_rcnn = FasterRCNNVGG16(mask=opt.mask)
     print('model construct completed')
@@ -81,33 +74,25 @@ def main():
         checkpoint = torch.load(args.path)['other_info']
         best_map = checkpoint['best_map']
         trainer.load(args.path)
-        
-        # if using simple-fast pretrained network, no epoch # saved
-        # if args.path == :
-        #     checkpoint['epoch'] = 0
-        #     best_map = 0
-        #
-        checkpoint['epoch'] = 0
+
         print("="*30+"   Checkpoint   "+"="*30)
-        print("Loaded checkpoint '{}' (epoch {})".format(args.path, checkpoint['epoch']))
+        print("Loaded checkpoint '{}' ".format(args.path, best_map))
 
         eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_), str(eval_result['map']),
-                                                           str(trainer.get_meter_data()))
+        # log_info = 'lr:{}, loss:{},map:{},lamr:{}'.format(str(lr_),
+        #                                           str(trainer.get_meter_data()),
+        #                                           str(eval_result['map']),
+        #                                           str(eval_result['lamr']))
+        log_info = 'lr:{}, loss:{},map:{}'.format(str(lr_),
+                                                  str(trainer.get_meter_data()),
+                                                  str(eval_result['map']))
         print("Evaluation Results on Validation Set: ")
         print(log_info)
-
-
-        test_eval_result = eval(test_dataloader, faster_rcnn, test_num=1000)
-        test_lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        test_log_info = 'lr:{}, map:{}'.format(str(test_lr_), str(test_eval_result['map']))
-        print("Evaluation Results on Test Set of size 1000: ")
-        print(test_log_info)
         print("\n\n")
     else:
         print("No checkpoint to evaluate is specified")
         
 if __name__ == "__main__":
-    print(opt._parse_all())
+    print(opt)
     main()
