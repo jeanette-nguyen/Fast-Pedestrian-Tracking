@@ -24,7 +24,7 @@ $ python build.py build_ext --inplace
 
 # Code Organization
 [demo.ipynb](demo.ipynb) - Run a demo of our code  
-[train.ipynb](train.ipynb) - Run the training of our model  
+[Train.ipynb](Train.ipynb) - Run the training of our model  
 <pre>
 core/  
 -- data/  
@@ -131,5 +131,7 @@ To prepare the dataset, run prepare_dataset.py in the tools directory:
 Output for example run:
 `$ python prepare_dataset.py --path=../data --data-dir=/datasets/ee285f-public/caltech_pedestrians_usa/`
 
-# Data
+Note, preparing the data is not necessary. We have included the our own prepared csv files (train, val, and test) in the repository as well in the [dataset folder](https://github.com/ktl014/Fast-Pedestrian-Tracking/tree/master/dataset).
+
+# Pretrained Model
 Download the pretrained weights from our model [here](https://drive.google.com/open?id=1S2McCJo-od-BvVDGaOw8_NICjJvF9rDe).
