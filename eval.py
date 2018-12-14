@@ -42,7 +42,7 @@ def eval(dataloader, faster_rcnn, test_num=10000):
 
     result = eval_detection_voc(
         pred_bboxes, pred_labels, pred_scores,
-        gt_bboxes, gt_labels, use_07_metric=True)
+        gt_bboxes, gt_labels, use_07_metric=False)
     return result
 
 def main():
