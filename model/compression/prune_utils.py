@@ -7,7 +7,7 @@ def print_model_parameters(model, with_values=False):
         print(f'{name:20} {str(param.shape):30} {str(param.dtype):15}')
         if with_values:
             print(param)
-            
+
 def log(filename, content):
     with open(filename, 'a') as f:
         content += "\n"

@@ -8,6 +8,8 @@ tests/*
 checkpoints/*
 utils/*.pyc
 .ipynb_checkpoints/*
+go.py
+.DS_Store
 ./demo_test_thomas.ipynb
 set_exp_01/*
 tools/logs/*

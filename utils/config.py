@@ -10,7 +10,7 @@ class Config:
     # data
     mask_lin = True
     mask_conv = False
-    voc_data_dir = '/data6/lekevin/fast_track/Fast-Pedestrian-Tracking/dataset/1'
+    voc_data_dir = 'dataset'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 4
@@ -38,7 +38,7 @@ class Config:
 
     # training
     epoch = 14
-    use_adam = True # Use Adam optimizer
+    use_adam = False # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
     # debug
@@ -46,7 +46,6 @@ class Config:
     test_num = 10000
     # model
     load_path = None
-    model_name = 'test_run'
 
     # benchmark
     benchmark_path = None
@@ -68,12 +67,12 @@ class Config:
         print('======user config========')
         pprint(self._state_dict())
         print('==========end============')
-    
+
     def _parse_all(self):
         print('======user config========')
         pprint(self._state_dict())
         print('==========end============')
-    
+
     def _state_dict(self):
         return {k: getattr(self, k) for k, _ in Config.__dict__.items() \
                 if not k.startswith('_')}

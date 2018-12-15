@@ -78,10 +78,13 @@ def main():
 
         eval_result = eval(val_dataloader, faster_rcnn, test_num=1000)
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
-        log_info = 'lr:{}, loss:{},map:{},lamr:{}'.format(str(lr_),
+        # log_info = 'lr:{}, loss:{},map:{},lamr:{}'.format(str(lr_),
+        #                                           str(trainer.get_meter_data()),
+        #                                           str(eval_result['map']),
+        #                                           str(eval_result['lamr']))
+        log_info = 'lr:{}, loss:{},map:{}'.format(str(lr_),
                                                   str(trainer.get_meter_data()),
-                                                  str(eval_result['map']),
-                                                  str(eval_result['lamr']))
+                                                  str(eval_result['map']))
         print("Evaluation Results on Validation Set: ")
         print(log_info)
         print("\n\n")

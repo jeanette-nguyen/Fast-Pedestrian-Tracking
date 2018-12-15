@@ -24,7 +24,7 @@ $ python build.py build_ext --inplace
 
 # Code Organization
 [demo.ipynb](demo.ipynb) - Run a demo of our code  
-[train.ipynb](train.ipynb) - Run the training of our model  
+[Train.ipynb](Train.ipynb) - Run the training of our model  
 <pre>
 core/  
 -- data/  
@@ -103,6 +103,8 @@ utils/
 
 __init__.py - Faster RCNN init
 
+demo.ipynb - Demo of our evaluation to detect some pedestrians
+
 eval.py - Evaluate our model's MAP
 
 prune.py - Trains a model with pruned weights
@@ -111,7 +113,7 @@ quantize.py - Quantizes the model weights
 
 requirements.txt - Requirements that must be installed for the model to run
 
-train.ipynb - 
+train.ipynb - Notebook to rerun the training if need be
 
 train.py - Run the code to train our Faster RCNN model
 
@@ -129,4 +131,7 @@ To prepare the dataset, run prepare_dataset.py in the tools directory:
 Output for example run:
 `$ python prepare_dataset.py --path=../data --data-dir=/datasets/ee285f-public/caltech_pedestrians_usa/`
 
+Note, preparing the data is not necessary. We have included the our own prepared csv files (train, val, and test) in the repository as well in the [dataset folder](https://github.com/ktl014/Fast-Pedestrian-Tracking/tree/master/dataset).
 
+# Pretrained Model
+Download the pretrained weights from our model [here](https://drive.google.com/open?id=1S2McCJo-od-BvVDGaOw8_NICjJvF9rDe).
