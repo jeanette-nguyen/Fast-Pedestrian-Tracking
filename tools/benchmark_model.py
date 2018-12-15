@@ -3,10 +3,13 @@ from __future__ import  absolute_import
 
 # Standard dist imports
 import cupy as cp
+import argparse
 import logging
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import sys
+sys.path.insert(0, os.path.abspath(os.path.pardir))
 import time
 
 # Third party imports
@@ -24,6 +27,12 @@ from utils.eval_tool import AverageMeter
 
 # Module level constants
 FPS = 'fps'
+
+parser = argparse.ArgumentParser(description="Arguments for quantization")
+parser.add_argument("--load_path", type=str, metavar='DIR',
+                    help="Model to benchmark")
+args = parser.parse_args()
+
 
 def benchmark(benchmarker, dataloader, faster_rcnn, test_num=1000):
     logger = logging.getLogger(__name__)
@@ -65,7 +74,8 @@ def main(**kwargs):
 
 
     # Load dataset
-    dataset = TestDataset(opt, split='test')
+    dataset = TestDataset(opt, split='val')
+
     dataloader = data_.DataLoader(dataset,
                                        batch_size=1,
                                        num_workers=opt.test_num_workers,
@@ -85,19 +95,19 @@ def main(**kwargs):
 
 
     # Resume from a checkpoint
-    if opt.load_path:
-        assert os.path.isfile(opt.load_path),\
-            'Checkpoint {} does not exist.'.format(opt.load_path)
+    if args.load_path:
+        assert os.path.isfile(args.load_path),\
+            'Checkpoint {} does not exist.'.format(args.load_path)
 
         trainer.load(opt.load_path)
         Logger.section_break('Checkpoint')
-        logger.info("Loaded checkpoint '{}' (epoch X)".format(opt.load_path))
+        logger.info("Loaded checkpoint '{}' (epoch X)".format(args.load_path))
 
 
     # Benchmark dataset
     fps = AverageMeter()
     benchmarker = {FPS: fps}
-    result = benchmark(benchmarker, dataloader, faster_rcnn, test_num=1000)
+    result = benchmark(benchmarker, dataloader, faster_rcnn, test_num=10000)
     Logger.section_break('Benchmark completed')
     model_parameters = filter(lambda p: p.requires_grad, faster_rcnn.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])
@@ -107,6 +117,4 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     main()
-    # import fire
-    #
-    # fire.Fire()
+
