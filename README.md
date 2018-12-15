@@ -43,7 +43,7 @@ data/
 dataset/
 -- data_test.csv - Caltech Dataset Test sets 06-10
 -- data_train.csv - Caltech Dataset Train sets 00-05
--- data_val.csv - Caltech Dataset Validation part of sets 00-05
+-- data_val.csv - Caltech Dataset Validation part of sets 00-10
 
 misc/
 -- convert_caffe_pretrain.py - Convert caffe pretrained weights to be usable by our model
@@ -115,7 +115,7 @@ requirements.txt - Requirements that must be installed for the model to run
 
 train.ipynb - Notebook to rerun the training if need be
 
-train.py - Run the code to train our Faster RCNN model
+Train.py - Run the code to train our Faster RCNN model
 
 trainer.py - Wrapper for conveniently training
 
