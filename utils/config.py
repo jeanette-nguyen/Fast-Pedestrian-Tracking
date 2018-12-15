@@ -10,7 +10,7 @@ class Config:
     # data
     mask_lin = True
     mask_conv = False
-    voc_data_dir = '/datasets/home/98/898/cjgunthe/Fast-Pedestrian-Tracking/dataset2/'
+    voc_data_dir = 'dataset2/'
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 4
